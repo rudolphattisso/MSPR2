@@ -1,0 +1,187 @@
+# Glossaire technique — FutureKawa
+
+Termes classés par ordre alphabétique.
+
+---
+
+## A
+
+**ADR (Architecture Decision Record)**
+Document qui enregistre une décision architecturale : le contexte, les options évaluées, la décision retenue et ses conséquences. Permet de comprendre *pourquoi* le code est structuré d'une certaine façon, pas seulement *comment*.
+
+**Agrégateur (backend siège)**
+Service qui consolide les données provenant de plusieurs sources (ici, les backends pays) pour les exposer en une réponse unifiée au frontend.
+
+**App Router (Next.js)**
+Système de routage de Next.js basé sur la structure de dossiers. Les fichiers `page.tsx` définissent les pages UI, les fichiers `route.ts` définissent les endpoints API (Route Handlers).
+
+---
+
+## B
+
+**Broker MQTT**
+Serveur intermédiaire qui reçoit les messages publiés par les clients (ESP32) et les redistribue aux abonnés (backend pays, Node-RED). Dans ce projet : Eclipse Mosquitto.
+
+**Build**
+Étape de compilation/optimisation d'une application Next.js (`next build`). Produit un artefact déployable.
+
+---
+
+## C
+
+**CI/CD (Continuous Integration / Continuous Delivery)**
+Pratique d'automatisation : chaque modification de code déclenche automatiquement build, tests et packaging. Dans ce projet : Jenkins avec Jenkinsfile.
+
+**Client MQTT**
+Toute application capable de publier ou de s'abonner à des topics via un broker MQTT. Ici : l'ESP32 (publier), le backend Next.js et Node-RED (s'abonner).
+
+---
+
+## D
+
+**DHT22**
+Capteur électronique mesurant température et humidité relative. Précision : ±0.5°C / ±2-5% humidité. Communique via protocole single-wire avec le microcontrôleur.
+
+**Docker Compose**
+Outil pour définir et lancer une stack multi-conteneurs via un fichier `docker-compose.yml`. Une commande (`docker compose up`) démarre tous les services (PostgreSQL, Mosquitto, Node-RED, Next.js apps).
+
+**Docker image**
+Snapshot immuable d'un environnement d'exécution. Chaque service du projet a sa propre image.
+
+---
+
+## E
+
+**ESP32**
+Microcontrôleur avec Wi-Fi et Bluetooth intégrés. Supporte Arduino (C++) et MicroPython. Utilisé ici pour lire le capteur DHT22 et publier les mesures via MQTT.
+
+---
+
+## F
+
+**FIFO (First In, First Out)**
+Principe de rotation des stocks : les lots entrés en premier doivent être expédiés en premier. Dans l'UI, les lots sont triés par `stored_at` croissant.
+
+**Flow (Node-RED)**
+Programme visuel composé de nœuds connectés représentant un traitement de données. Dans ce projet : `[MQTT in] → [règles seuils] → [email] → [POST /api/alerts]`.
+
+---
+
+## H
+
+**Hypertable (TimescaleDB)**
+Table PostgreSQL transformée par TimescaleDB pour optimiser les données temporelles. Elle est automatiquement partitionnée en **chunks** (intervalles de temps), rendant les requêtes `WHERE recorded_at BETWEEN ...` très efficaces.
+
+---
+
+## J
+
+**Jenkinsfile**
+Fichier texte versionné dans le repo qui décrit le pipeline CI/CD Jenkins en syntaxe déclarative Groovy. Principe de *pipeline as code*.
+
+**JWT (JSON Web Token)**
+Standard de token d'authentification signé. Contient les informations de session (user id, rôle) encodées en base64. Utilisé par NextAuth.js pour maintenir la session sans état serveur.
+
+---
+
+## M
+
+**Migration (Prisma)**
+Fichier SQL généré automatiquement par Prisma (`prisma migrate dev`) qui décrit l'évolution du schéma de base de données. Versionné dans `prisma/migrations/`.
+
+**Monorepo**
+Organisation où plusieurs applications (backend-pays, backend-siege, frontend, iot) coexistent dans un seul dépôt Git.
+
+**MQTT (Message Queuing Telemetry Transport)**
+Protocole de messagerie publish/subscribe léger, conçu pour les réseaux contraints et les appareils IoT. Standard OASIS. Entête de 2 octets minimum.
+
+---
+
+## N
+
+**NextAuth.js**
+Bibliothèque d'authentification native Next.js. Gère sessions, JWT, providers (Credentials, OAuth). Intégration via `auth()` côté serveur et `useSession()` côté client.
+
+**Node-RED**
+Outil de programmation visuelle par flux pour connecter des appareils, APIs et services. Utilisé ici pour l'alerting : souscription MQTT → détection seuil → envoi email.
+
+---
+
+## O
+
+**ORM (Object-Relational Mapping)**
+Couche logicielle qui permet d'interagir avec une base SQL en TypeScript (objets, fonctions) sans écrire de SQL brut. Dans ce projet : Prisma.
+
+---
+
+## P
+
+**Payload MQTT**
+Contenu du message MQTT, généralement en JSON. Exemple : `{"temp": 29.4, "humidity": 54.8, "recorded_at": "..."}`.
+
+**Pipeline (Jenkins)**
+Séquence de stages automatisés : Install → Lint → Test → Build → Package. Défini dans le Jenkinsfile.
+
+**Prisma**
+ORM TypeScript. Le fichier `schema.prisma` décrit les modèles de données, `prisma migrate` gère les migrations SQL, le Prisma Client généré offre un accès typé à la DB.
+
+**Prisma Studio**
+Interface web fournie par Prisma pour visualiser et modifier les données de la base de données. Utile en développement et en démo.
+
+**Pub/Sub (Publish/Subscribe)**
+Modèle de messagerie où les émetteurs (publishers) envoient des messages sur des canaux (topics) sans connaître les récepteurs (subscribers). Le broker fait l'intermédiaire.
+
+---
+
+## Q
+
+**QoS (Quality of Service) — MQTT**
+Niveau de garantie de livraison des messages MQTT.
+- QoS 0 : au plus une fois (pas de garantie)
+- QoS 1 : au moins une fois (peut dupliquer)
+- QoS 2 : exactement une fois (plus lent)
+
+Dans ce projet : QoS 1 pour les mesures (doublon acceptable, perte non acceptable).
+
+---
+
+## R
+
+**Route Handler (Next.js)**
+Fichier `route.ts` dans `app/api/` qui définit un endpoint REST (GET, POST, PUT, DELETE). Équivalent d'une route Express dans l'écosystème Next.js.
+
+---
+
+## S
+
+**Schema.prisma**
+Fichier de définition des modèles de données Prisma. Source de vérité unique pour la structure de la base de données.
+
+**Seed**
+Script qui peuple la base de données avec des données initiales de test (`prisma db seed`). Dans ce projet : données des 3 pays, entrepôts, lots d'exemple, utilisateurs.
+
+**Session (NextAuth.js)**
+Objet contenant les informations de l'utilisateur connecté (id, email, rôle, pays), disponible dans les Route Handlers via `auth()` et dans les composants React via `useSession()`.
+
+**Stage (Jenkins)**
+Étape nommée dans un pipeline Jenkins. Ex : `stage('Test') { ... }`. Permet de visualiser l'avancement du pipeline et d'identifier où un échec se produit.
+
+---
+
+## T
+
+**TimescaleDB**
+Extension open-source de PostgreSQL optimisée pour les données temporelles (timeseries). Ajoute les hypertables, la compression automatique et les agrégats continus. Même SQL, même driver, même image Docker que PostgreSQL.
+
+**Topic (MQTT)**
+Chaîne de caractères hiérarchique qui catégorise les messages. Format : `futurekawa/<pays>/<entrepôt>/sensors/<capteur>/measurements`. Les clients s'abonnent à un topic ou à un pattern (`futurekawa/BR/#` = tous les messages Brésil).
+
+**TypeScript**
+Sur-ensemble typé de JavaScript. Détecte les erreurs à la compilation plutôt qu'à l'exécution. Utilisé dans toutes les applications Next.js du projet.
+
+---
+
+## W
+
+**Worker MQTT (backend pays)**
+Processus dans le backend Next.js qui se connecte au broker Mosquitto, s'abonne aux topics de mesures, et insère les données reçues dans TimescaleDB.

@@ -1,0 +1,185 @@
+# CLAUDE.md — FutureKawa
+
+Mémoire persistante. À lire au début de chaque session.
+
+---
+
+## Mode de travail — RÈGLE FONDAMENTALE
+
+1. Présenter le plan numéroté avant tout développement
+2. Attendre le GO explicite avant de commencer
+3. Implémenter UNE seule étape à la fois
+4. Résumer ce qui a été fait à la fin de chaque étape
+5. Demander explicitement la validation avant la suivante
+6. Ne jamais enchaîner sans confirmation
+
+### Format plan
+```
+## Plan d'implémentation
+Étape 1 : [description courte]
+Étape 2 : [description courte]
+On commence par l'étape 1 ?
+```
+
+### Format fin d'étape
+```
+## Étape X/N terminée
+- Ce qui a été fait : [résumé]
+- Fichiers modifiés : [liste]
+- Point d'attention : [si besoin]
+
+## Checklist de clôture
+- [ ] SESSION-LOG.md mis à jour (résumé + "Prochain démarrage")
+- [ ] glossaire.md complété (nouveaux termes techniques)
+- [ ] doc/doc_prepa/futurekawa_notes.md complété (décisions ou points clés nouveaux)
+- [ ] README.md mis à jour (si nouveau service Docker, dépendance ou commande)
+
+Prêt pour l'étape suivante ?
+```
+
+### Règles supplémentaires
+- Si une étape est trop grosse → la découper
+- Si un problème détecté → le signaler AVANT de coder
+- Toujours expliquer le POURQUOI d'un choix technique
+- En cas de doute sur le périmètre → poser la question
+- **README.md** : toute addition/modification d'environnement (nouveau service Docker, nouvelle dépendance, nouvelle commande d'init) doit être répercutée dans `README.md` avant de clore l'étape — montrer le diff au user pour validation avant écriture
+
+**Documents à maintenir à chaque session :**
+- `README.md` : nouveau service Docker, dépendance, commande d'init
+- `doc/journal/SESSION-LOG.md` : résumé de la session + champ "Prochain démarrage"
+- `doc/glossaire.md` : tout nouveau terme technique introduit dans la session
+- `doc/doc_prepa/futurekawa_notes.md` : toute décision ou point clé nouveau
+
+---
+
+## Projet
+
+**FutureKawa** — Plateforme de suivi des stocks et des conditions de stockage de grains de café, multi-pays, avec intégration IoT.
+
+- **Moi** : backend pays, backend siège, frontend Next.js, schémas BDD, seeds, Docker, CI/CD
+- **Coéquipiers** : répartition à définir (ownership par bloc à préciser en début de sprint)
+- **Architecture** : backends pays indépendants (Brésil / Équateur / Colombie) + agrégateur siège + frontend centralisé
+
+---
+
+## Structure du dépôt
+
+```
+mspr2/                          ← monorepo
+├── backend-pays/               ← Next.js API (port 3001) — un pays exemple
+├── backend-siege/              ← Next.js API agrégateur (port 3002)
+├── frontend/                   ← Next.js UI (port 3000)
+├── shared/
+│   └── types/                  ← interfaces TypeScript partagées entre apps
+├── iot/                        ← code microcontrôleur (à préciser selon matériel fourni)
+├── doc/
+│   ├── adr/                    ← décisions architecturales (ADR-0001 à ADR-0009)
+│   ├── journal/                ← SESSION-LOG.md
+│   └── COMMIT_CHARTER.md
+├── Jenkinsfile                 ← pipeline CI/CD
+├── docker-compose.yml          ← stack complète démarrable
+└── README.md
+```
+
+---
+
+## Stack technique
+
+| Composant | Technologie |
+|---|---|
+| Backend pays + siège + Frontend | Next.js 15 App Router + TypeScript |
+| ORM | Prisma |
+| BDD relationnelle + timeseries | PostgreSQL 16 + TimescaleDB |
+| Broker MQTT | Eclipse Mosquitto (Docker) |
+| Alerting email | Node-RED (Docker) |
+| Authentification | NextAuth.js v5 |
+| IoT | ESP32 + capteur temp/humidité (protocole à préciser selon matériel) |
+| CI/CD | Jenkins (Jenkinsfile déclaratif) |
+| Conteneurisation | Docker Compose |
+
+**Seuils métier par pays :**
+
+| Pays | Temp. idéale | Tolérance | Humidité idéale | Tolérance |
+|---|---|---|---|---|
+| Brésil | 29°C | ±3°C | 55% | ±2% |
+| Équateur | 31°C | ±3°C | 60% | ±2% |
+| Colombie | 26°C | ±3°C | 80% | ±2% |
+
+Lot dépassant **365 jours** de stockage → alerte péremption automatique.
+
+---
+
+## Décisions actives
+
+| ADR | Décision |
+|---|---|
+| ADR-0001 | PostgreSQL + TimescaleDB — MongoDB écarté (prototype), dette documentée |
+| ADR-0002 | Architecture distribuée pays ↔ siège — backends indépendants, agrégation via API REST |
+| ADR-0003 | Monorepo simple — un seul repo, pas de Turborepo |
+| ADR-0004 | Next.js homogène pour les trois apps — homogénéité stack, types partagés |
+| ADR-0005 | NextAuth.js posé dès Bloc 6 — dette technique trop lourde si reporté |
+| ADR-0006 | Jenkins + Jenkinsfile — exigence explicite du cahier des charges |
+| ADR-0007 | Node-RED pour l'alerting — recommandé par le sujet, découplé, réversible |
+| ADR-0008 | MQTT v3.1.1 + Mosquitto — standard IoT, QoS 1 pour les mesures |
+| ADR-0009 | Prisma ORM — maturité, migrations versionnées, Prisma Studio |
+
+Détail dans `doc/adr/`.
+
+---
+
+## Roadmap (état macro)
+
+```
+[ ] Bloc 1  — Init monorepo
+              Structure dossiers, docker-compose.yml de base,
+              Prisma init, service Mosquitto
+
+[ ] Bloc 2  — Socle BDD
+              Schémas Prisma (pays, entrepôts, lots, mesures, alertes, users)
+              TimescaleDB hypertable, seeds 3 pays
+
+[ ] Bloc 3  — CI Jenkins (squelette)
+              Jenkinsfile : install + lint + placeholder tests
+
+[ ] Bloc 4  — Backend pays
+              API REST CRUD lots, ingestion MQTT → TimescaleDB
+              Règles d'alerte seuils + péremption
+
+[ ] Bloc 5  — IoT
+              ESP32 → MQTT broker → backend pays (end-to-end)
+              Démo live ou scénario reproductible
+
+[ ] Bloc 6  — Auth
+              NextAuth.js, login, middleware protège-routes, rôles
+
+[ ] Bloc 7  — Backend siège
+              API agrégateur multi-pays (proxy + consolidation)
+              Routes stocks / mesures / alertes
+
+[ ] Bloc 8  — Frontend
+              UI lots triés FIFO, courbes temp/humidité
+              Statuts alertes, sélection pays/entrepôt
+
+[ ] Bloc 9  — Alerting Node-RED
+              Flow MQTT → règles → email responsable
+              Service Node-RED dans docker-compose
+
+[ ] Bloc 10 — Tests (consolidation)
+              Couverture unitaire + intégration + API
+              Plan de tests livrable MSPR
+
+[ ] Bloc 11 — Livrables MSPR finaux
+              Schéma proto automatisation phase 2
+              Questionnaire interview client
+              Documentation utilisateur métier
+```
+
+Détail complet dans `ROADMAP.md` (à créer).
+
+---
+
+## Reprendre une session (30 secondes)
+
+1. Lire `doc/journal/SESSION-LOG.md` — dernière entrée
+2. Champ **"Prochain démarrage"** = première action à faire
+3. Coder
