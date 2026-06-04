@@ -42,10 +42,10 @@
 
 ### Prochain démarrage
 **Bloc 1 — Init monorepo (en cours)**
-- [x] Structure de dossiers créée (`backend-pays/`, `backend-siege/`, `frontend/`, `shared/types/`, `iot/`)
-- [ ] Initialiser les 2 projets Next.js : `frontend/` et `backend-pays/`
-- [ ] Poser le `docker-compose.yml` de base (service PostgreSQL + TimescaleDB + Mosquitto)
-- [ ] Initialiser Prisma dans `backend-pays/`
+- [x] Structure de dossiers créée
+- [x] Initialiser les 2 projets Next.js : `app-siege/` et `backend-pays/`
+- [x] Poser le `docker-compose.yml` de base (service PostgreSQL + TimescaleDB + Mosquitto)
+- [x] Initialiser Prisma dans `backend-pays/`
 
 ---
 
@@ -74,9 +74,78 @@
 - Architecture validée CDC : backend-pays + app-siege + IoT + Node-RED + Jenkins + Docker Compose
 
 ### Prochain démarrage
-**Bloc 1 — Init monorepo (suite)**
-- [x] Initialiser `app-siege/` — Next.js 15, TypeScript, App Router, Tailwind, ESLint
-- [x] Initialiser `backend-pays/` — Next.js 15, TypeScript, App Router, sans Tailwind, ESLint
-- [x] `.gitignore` racine mis à jour (node_modules, .next, .env, logs)
-- [ ] Poser le `docker-compose.yml` de base (PostgreSQL/TimescaleDB + Mosquitto)
-- [ ] Initialiser Prisma dans `backend-pays/`
+**Bloc 1 — TERMINÉ ✓**
+
+**Bloc 2 — Socle BDD (en cours)**
+- [x] Modèles Prisma définis : Country, Warehouse, Lot, Measurement, Alert, User
+- [x] UUID natif PostgreSQL (`@db.Uuid` + `gen_random_uuid()`) sur tous les IDs auto-générés
+- [x] PK composite `(id, recordedAt)` sur Measurement (contrainte TimescaleDB)
+- [x] Migration créée + TimescaleDB activé (`CREATE EXTENSION` + `create_hypertable`)
+- [x] Migration appliquée — 7 tables en base dont `measurements` en hypertable
+- [x] Seeds : 3 pays, 3 entrepôts, 9 lots (CONFORME/EN_ALERTE/PERIME), 5 users
+- [x] Prisma 7 adapter pattern documenté (`@prisma/adapter-pg` + `Pool`)
+
+---
+
+## Session 003 — 2026-06-04
+
+### Ce qui a été fait
+- Nouveau protocole de validation : 4 options sur chaque choix technique (Oui / Oui pour session / Non / Autre)
+- Schéma Prisma complet écrit et validé (`prisma validate` ✓)
+- Décision UUID : type natif `@db.Uuid` + `gen_random_uuid()` (vs TEXT ou SERIAL)
+- Décision PK composite sur Measurement : requis par TimescaleDB (partitionnement par chunks)
+- Justifications historisées : glossaire + futurekawa_notes section 4b
+
+### Fichiers modifiés
+- `backend-pays/prisma/schema.prisma`
+- `doc/glossaire.md` (entrée UUID)
+- `doc/doc_prepa/futurekawa_notes.md` (section 4b décisions schéma BDD)
+- `memory/feedback_choix_implementation.md` (nouveau)
+
+### Décisions clés actées
+- UUID natif PostgreSQL sur tous les IDs — unicité inter-pays garantie sans coordination
+- `Country.id` = code pays explicite ("BR"/"EC"/"CO"), pas UUID
+- `Measurement` : PK composite `(id, recordedAt)` — contrainte fondamentale TimescaleDB
+- Measurements liées à Warehouse (pas au Lot) — le capteur est dans l'entrepôt
+
+### Prochain démarrage
+**Bloc 2 — TERMINÉ ✓**
+
+**Bloc 3 — CI Jenkins (squelette)**
+- Créer `Jenkinsfile` à la racine (pipeline déclaratif)
+- Stages : Install → Lint → Test (placeholder) → Build
+- Vérifier que le pipeline est lisible et exécutable
+
+---
+
+## Session 004 — 2026-06-04
+
+### Ce qui a été fait
+- Création du skill global `/cadrage` (`~/.claude/commands/cadrage.md`) — cadrage interactif de projet, portée globale
+- Bloc 3 — CI Jenkins : `Jenkinsfile` déclaratif créé à la racine
+- Stages séquentiels : Install → Lint → Test (placeholder) → Build
+- Choix séquentiel vs parallèle documenté : parallèle reporté au Bloc 9 (tests réels)
+- Création de `doc/guide-technique.md` (document pédagogique évolutif)
+
+### Fichiers créés / modifiés
+- `~/.claude/commands/cadrage.md` (nouveau skill global Claude Code)
+- `Jenkinsfile` (nouveau)
+- `doc/guide-technique.md` (nouveau)
+- `doc/glossaire.md` (entrées : npm ci, Pipeline as code, Squelette de pipeline)
+- `doc/doc_prepa/futurekawa_notes.md` (Bloc 3 terminé + section CI/CD)
+- `README.md` (section CI/CD ajoutée)
+- `doc/journal/SESSION-LOG.md`
+
+### Décisions clés actées
+- Stages séquentiels pour le squelette — lisibilité + débogage > vitesse sur un prototype
+- Stage Test = `echo` placeholder jusqu'au Bloc 9 (tests consolidation)
+- `tools { nodejs 'node-20' }` requiert le plugin NodeJS Jenkins configuré sur le serveur
+- Parallélisation prévue au Bloc 9 quand les tests seront réels et le temps de pipeline mesurable
+
+### Prochain démarrage
+**Bloc 3 — TERMINÉ ✓**
+
+**Bloc 4 — Backend pays**
+- Routes API REST CRUD : lots (`/api/lots`), entrepôts (`/api/warehouses`), mesures (`/api/measurements`)
+- Worker MQTT : connexion Mosquitto → parsing payload → insert TimescaleDB
+- Règles d'alerte : seuils température/humidité par pays + péremption 365 jours

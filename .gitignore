@@ -20,6 +20,10 @@ doc/doc_prepa/
 **/npm-debug.log*
 **/*.log
 
+# Mosquitto runtime (données et logs générés)
+mosquitto/data/
+mosquitto/log/
+
 # OS
 .DS_Store
 Thumbs.db
