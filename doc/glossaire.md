@@ -59,6 +59,9 @@ Microcontrôleur avec Wi-Fi et Bluetooth intégrés. Supporte Arduino (C++) et M
 
 ## F
 
+**Fire-and-forget**
+Pattern d'exécution asynchrone où une tâche est déclenchée sans attendre sa complétion. Dans ce projet : `checkMeasurementAlerts()` est appelée sans `await` depuis la route `POST /api/measurements` et depuis le worker MQTT. Avantage : l'ingestion répond immédiatement à l'ESP32. Risque : si la vérification d'alerte échoue, l'erreur est loggée mais non propagée. Acceptable en prototype ; en production, remplacer par une job queue.
+
 **FIFO (First In, First Out)**
 Principe de rotation des stocks : les lots entrés en premier doivent être expédiés en premier. Dans l'UI, les lots sont triés par `stored_at` croissant.
 
@@ -71,6 +74,13 @@ Programme visuel composé de nœuds connectés représentant un traitement de do
 
 **Hypertable (TimescaleDB)**
 Table PostgreSQL transformée par TimescaleDB pour optimiser les données temporelles. Elle est automatiquement partitionnée en **chunks** (intervalles de temps), rendant les requêtes `WHERE recorded_at BETWEEN ...` très efficaces.
+
+---
+
+## I
+
+**instrumentation.ts (Next.js)**
+Fichier à la racine d'une app Next.js qui exporte une fonction `register()`. Celle-ci est appelée une seule fois au démarrage du serveur, avant que les routes soient prêtes. Utilisée dans ce projet pour lancer le worker MQTT et vérifier les péremptions au boot. La garde `NEXT_RUNTIME === "nodejs"` empêche le code Node.js de s'exécuter dans le runtime Edge.
 
 ---
 
@@ -170,6 +180,9 @@ Fichier `route.ts` dans `app/api/` qui définit un endpoint REST (GET, POST, PUT
 ---
 
 ## S
+
+**Singleton (pattern)**
+Pattern de conception garantissant qu'une classe n'a qu'une seule instance dans toute l'application. Dans ce projet : `lib/prisma.ts` exporte un `PrismaClient` unique. Sans ce pattern, chaque hot-reload en développement créerait une nouvelle instance et épuiserait le pool de connexions PostgreSQL. Implémenté via une variable globale (`globalThis`) qui survit aux rechargements de modules.
 
 **Squelette de pipeline**
 Structure complète d'un pipeline CI/CD où tous les stages sont présents et fonctionnels, mais certains ne contiennent pas encore leur implémentation réelle (remplacés par un `echo` ou un commentaire). Le pipeline passe au vert dès le premier lancement. Avantage : la structure est posée tôt, chaque bloc du projet vient simplement remplir le stage correspondant sans restructurer le pipeline. Dans ce projet : le stage `Test` est un squelette jusqu'au Bloc 9.

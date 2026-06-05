@@ -149,3 +149,44 @@
 - Routes API REST CRUD : lots (`/api/lots`), entrepôts (`/api/warehouses`), mesures (`/api/measurements`)
 - Worker MQTT : connexion Mosquitto → parsing payload → insert TimescaleDB
 - Règles d'alerte : seuils température/humidité par pays + péremption 365 jours
+
+---
+
+## Session 005 — 2026-06-05
+
+### Ce qui a été fait
+- Bloc 4 — Backend pays : implémentation complète
+- `lib/prisma.ts` — singleton Prisma 7 avec adaptateur `PrismaPg` + `pg.Pool`
+- `lib/alert-rules.ts` — logique seuils temp/humidité par pays + péremption 365 jours (transactions lot par lot)
+- 6 routes API REST : GET/POST `/api/lots`, GET/PATCH/DELETE `/api/lots/:id`, GET `/api/lots/:id/measurements`, POST `/api/measurements`, GET `/api/alerts`, GET `/api/warehouses`
+- `lib/mqtt-worker.ts` — connexion Mosquitto, subscribe `futurekawa/mesure` QoS 1, validation payload JSON, insert mesure, `checkMeasurementAlerts` fire-and-forget
+- `instrumentation.ts` — démarre le worker MQTT + `checkAllLotExpirations` au boot Next.js (protégé `NEXT_RUNTIME === "nodejs"`)
+- Correction imports Prisma 7 : `@/app/generated/prisma/client` (pas d'`index.ts` généré)
+
+### Fichiers créés / modifiés
+- `backend-pays/lib/prisma.ts` (nouveau)
+- `backend-pays/lib/alert-rules.ts` (nouveau)
+- `backend-pays/app/api/warehouses/route.ts` (nouveau)
+- `backend-pays/app/api/lots/route.ts` (nouveau)
+- `backend-pays/app/api/lots/[id]/route.ts` (nouveau)
+- `backend-pays/app/api/lots/[id]/measurements/route.ts` (nouveau)
+- `backend-pays/app/api/measurements/route.ts` (nouveau)
+- `backend-pays/app/api/alerts/route.ts` (nouveau)
+- `backend-pays/lib/mqtt-worker.ts` (nouveau)
+- `backend-pays/instrumentation.ts` (nouveau)
+- `backend-pays/.env` (`MQTT_BROKER_URL` ajouté)
+- `backend-pays/package.json` (dépendance `mqtt` ajoutée)
+
+### Décisions clés actées
+- `checkMeasurementAlerts` fire-and-forget dans POST `/api/measurements` ET dans le worker MQTT : l'ingestion ne bloque pas sur la vérification des seuils
+- Transactions lot par lot (pas un batch) : un échec sur un lot n'impacte pas les autres
+- Prisma 7 singleton : `PrismaPg` + `pg.Pool` encapsulés dans `createClient()`, pattern identique au seed
+- `instrumentation.ts` protégé par `NEXT_RUNTIME === "nodejs"` : le worker MQTT ne démarre pas sur Edge
+
+### Prochain démarrage
+**Bloc 4 — TERMINÉ ✓**
+
+**Bloc 5 — IoT**
+- Firmware ESP32 (Arduino C++) : lecture DHT22 → publication sur `futurekawa/mesure` en JSON
+- Format payload attendu par le worker : `{"warehouseId": "...", "temperature": 29.4, "humidity": 54.8}`
+- Démo fallback : simulation via `mosquitto_pub` ou script Python si ESP32 non disponible
