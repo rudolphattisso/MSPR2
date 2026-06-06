@@ -47,20 +47,23 @@ Les trois applications (backend pays, backend siège, frontend) sont des projets
 
 ## Décision retenue
 
-**Option B — Next.js App Router + TypeScript pour les trois applications.**
+**Option B amendée — Next.js App Router + TypeScript pour deux applications (2026-06-03).**
 
-Les backends pays et siège n'exposent que des Route Handlers (`app/api/`), sans pages React. Le frontend est une application Next.js complète avec Server Components et Client Components.
+Suite à la décision de fusionner agrégateur siège et UI web (voir ADR-0002 amendé), le projet ne comporte plus que deux applications Next.js :
 
 ```
 backend-pays/   → Next.js (API routes uniquement, port 3001)
-backend-siege/  → Next.js (API routes uniquement, port 3002)
-frontend/       → Next.js (UI complète, port 3000)
+app-siege/       → Next.js (UI + agrégation siège, port 3000)
 ```
+
+`backend-siege/` n'est pas instancié. La logique d'agrégation siège vit dans `app-siege/app/api/`.
 
 ---
 
 ## Conséquences
 
-- Le dossier `app/` des backends pays et siège ne contient que des `route.ts`, pas de composants UI
-- Les types des réponses API (ex: `LotResponse`, `MeasurementResponse`) sont définis dans `shared/types/` et importés par le frontend et les backends
-- Le `next.config.ts` des backends peut désactiver les optimisations frontend inutiles (`output: 'standalone'` suffit)
+- Le dossier `app/` de `backend-pays/` ne contient que des `route.ts`, pas de composants UI
+- `app-siege/app/api/` contient deux types de routes : les routes d'agrégation siège (`/api/stocks`, `/api/alertes`) et les routes utilitaires UI
+- Les types des réponses API (ex: `LotResponse`, `MeasurementResponse`) sont définis dans `shared/types/` et importés par app-siege et backend-pays
+- Le `next.config.ts` du backend pays peut désactiver les optimisations frontend inutiles (`output: 'standalone'` suffit)
+- Un futur client Expo consomme directement les Route Handlers de `app-siege/` — zéro refactoring nécessaire

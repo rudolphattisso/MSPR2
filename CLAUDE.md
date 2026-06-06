@@ -52,13 +52,34 @@ Prêt pour l'étape suivante ?
 
 ---
 
+## Tests de fin de bloc — RÈGLE
+
+**À la fin de chaque bloc, Claude teste systématiquement ce qui vient d'être mis en place.**
+
+Deux modes disponibles — le mode actif est indiqué dans le SESSION-LOG. Taper `MODE AUTO` ou `MODE GUIDÉ` à tout moment pour changer.
+
+### Mode AUTO (actif par défaut)
+Claude exécute tous les tests et affiche les résultats en temps réel :
+- Commandes lancées visibles avec leur sortie
+- Bugs détectés et corrigés dans la foulée (avec plan + GO avant correction)
+- Rapport final sous forme de tableau ✅/❌
+
+### Mode GUIDÉ
+Claude génère un protocole de test que l'utilisateur exécute lui-même, pas à pas :
+- Étapes numérotées avec commandes exactes à copier-coller
+- Résultat attendu pour chaque étape
+- Critères de validation explicites (ce que tu dois voir pour que ça soit OK)
+- L'utilisateur rapporte le résultat, Claude analyse et oriente si ça ne passe pas
+
+---
+
 ## Projet
 
 **FutureKawa** — Plateforme de suivi des stocks et des conditions de stockage de grains de café, multi-pays, avec intégration IoT.
 
-- **Moi** : backend pays, backend siège, frontend Next.js, schémas BDD, seeds, Docker, CI/CD
+- **Moi** : backend-pays, app-siege (UI + agrégation), schémas BDD, seeds, Docker, CI/CD
 - **Coéquipiers** : répartition à définir (ownership par bloc à préciser en début de sprint)
-- **Architecture** : backends pays indépendants (Brésil / Équateur / Colombie) + agrégateur siège + frontend centralisé
+- **Architecture** : backends pays indépendants (Brésil / Équateur / Colombie) + app-siege (agrégateur siège + UI web)
 
 ---
 
@@ -66,9 +87,9 @@ Prêt pour l'étape suivante ?
 
 ```
 mspr2/                          ← monorepo
-├── backend-pays/               ← Next.js API (port 3001) — un pays exemple
-├── backend-siege/              ← Next.js API agrégateur (port 3002)
-├── frontend/                   ← Next.js UI (port 3000)
+├── backend-pays/               ← Next.js API (port 3001) — API locale + ingestion MQTT
+├── backend-siege/              ← dossier vide (fusionné dans app-siege — voir ADR-0002)
+├── app-siege/                  ← Next.js UI + agrégateur siège (port 3000)
 ├── shared/
 │   └── types/                  ← interfaces TypeScript partagées entre apps
 ├── iot/                        ← code microcontrôleur (à préciser selon matériel fourni)
@@ -87,7 +108,7 @@ mspr2/                          ← monorepo
 
 | Composant | Technologie |
 |---|---|
-| Backend pays + siège + Frontend | Next.js 15 App Router + TypeScript |
+| backend-pays (API locale) + app-siege (UI + agrégation siège) | Next.js 15 App Router + TypeScript |
 | ORM | Prisma |
 | BDD relationnelle + timeseries | PostgreSQL 16 + TimescaleDB |
 | Broker MQTT | Eclipse Mosquitto (Docker) |
@@ -114,9 +135,9 @@ Lot dépassant **365 jours** de stockage → alerte péremption automatique.
 | ADR | Décision |
 |---|---|
 | ADR-0001 | PostgreSQL + TimescaleDB — MongoDB écarté (prototype), dette documentée |
-| ADR-0002 | Architecture distribuée pays ↔ siège — backends indépendants, agrégation via API REST |
+| ADR-0002 | Architecture distribuée pays ↔ siège — backends pays indépendants, agrégation dans app-siege/ |
 | ADR-0003 | Monorepo simple — un seul repo, pas de Turborepo |
-| ADR-0004 | Next.js homogène pour les trois apps — homogénéité stack, types partagés |
+| ADR-0004 | Next.js homogène pour deux apps — backend-pays (API) + app-siege (UI + agrégation siège) |
 | ADR-0005 | NextAuth.js posé dès Bloc 6 — dette technique trop lourde si reporté |
 | ADR-0006 | Jenkins + Jenkinsfile — exigence explicite du cahier des charges |
 | ADR-0007 | Node-RED pour l'alerting — recommandé par le sujet, découplé, réversible |
@@ -130,45 +151,44 @@ Détail dans `doc/adr/`.
 ## Roadmap (état macro)
 
 ```
-[ ] Bloc 1  — Init monorepo
+[x] Bloc 1  — Init monorepo
               Structure dossiers, docker-compose.yml de base,
               Prisma init, service Mosquitto
 
-[ ] Bloc 2  — Socle BDD
+[x] Bloc 2  — Socle BDD
               Schémas Prisma (pays, entrepôts, lots, mesures, alertes, users)
               TimescaleDB hypertable, seeds 3 pays
 
-[ ] Bloc 3  — CI Jenkins (squelette)
+[x] Bloc 3  — CI Jenkins (squelette)
               Jenkinsfile : install + lint + placeholder tests
 
-[ ] Bloc 4  — Backend pays
+[x] Bloc 4  — Backend pays
               API REST CRUD lots, ingestion MQTT → TimescaleDB
               Règles d'alerte seuils + péremption
+              ↳ Testé session 006 — onDelete: Cascade corrigé
 
-[ ] Bloc 5  — IoT
-              ESP32 → MQTT broker → backend pays (end-to-end)
-              Démo live ou scénario reproductible
+[x] Bloc 5  — IoT
+              Firmware ESP32 (config.h isolé, extensible tout capteur)
+              Simulateur Python 3 scénarios (nominal / hors-seuil / limite)
+              Testé session 007 ✓
 
 [ ] Bloc 6  — Auth
               NextAuth.js, login, middleware protège-routes, rôles
 
-[ ] Bloc 7  — Backend siège
-              API agrégateur multi-pays (proxy + consolidation)
-              Routes stocks / mesures / alertes
-
-[ ] Bloc 8  — Frontend
+[ ] Bloc 7  — Frontend + Agrégateur siège  ← fusion anciens Blocs 7 & 8
+              API agrégateur dans frontend/app/api/ (stocks, mesures, alertes)
               UI lots triés FIFO, courbes temp/humidité
               Statuts alertes, sélection pays/entrepôt
 
-[ ] Bloc 9  — Alerting Node-RED
+[ ] Bloc 8  — Alerting Node-RED
               Flow MQTT → règles → email responsable
               Service Node-RED dans docker-compose
 
-[ ] Bloc 10 — Tests (consolidation)
+[ ] Bloc 9  — Tests (consolidation)
               Couverture unitaire + intégration + API
               Plan de tests livrable MSPR
 
-[ ] Bloc 11 — Livrables MSPR finaux
+[ ] Bloc 10 — Livrables MSPR finaux
               Schéma proto automatisation phase 2
               Questionnaire interview client
               Documentation utilisateur métier
