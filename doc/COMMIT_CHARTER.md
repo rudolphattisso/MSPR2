@@ -32,8 +32,7 @@
 | Scope | Périmètre |
 |---|---|
 | `backend-pays` | API Next.js pays local |
-| `backend-siege` | API Next.js agrégateur siège |
-| `frontend` | UI Next.js |
+| `app-siege` | UI Next.js + agrégation siège |
 | `iot` | Code ESP32 / microcontrôleur |
 | `auth` | Authentification NextAuth.js |
 | `db` | Schémas Prisma, migrations, seeds |
