@@ -190,3 +190,73 @@
 - Firmware ESP32 (Arduino C++) : lecture DHT22 → publication sur `futurekawa/mesure` en JSON
 - Format payload attendu par le worker : `{"warehouseId": "...", "temperature": 29.4, "humidity": 54.8}`
 - Démo fallback : simulation via `mosquitto_pub` ou script Python si ESP32 non disponible
+
+---
+
+## Session 006 — 2026-06-06
+
+### Ce qui a été fait
+- Test complet des Blocs 1 à 4 en Mode AUTO (Claude exécute + affiche)
+- Infrastructure : port DB non publié détecté → `docker-compose up --force-recreate db` corrigé
+- Toutes les routes API testées : GET/POST/PATCH/DELETE lots, measurements, alerts, warehouses
+- Règles d'alerte validées : mesure 38°C/70% → 6 alertes générées sur les 3 lots Brésil actifs
+- Worker MQTT validé end-to-end : `mosquitto_pub` → 4 alertes Équateur créées
+- **Bug détecté et corrigé** : `DELETE /api/lots/:id` retournait 500 si le lot avait des alertes → `onDelete: Cascade` manquant sur `Alert.lot` dans `schema.prisma`
+- Migration `20260606063341_alert_cascade_delete` générée et appliquée
+- Nouvelle règle de fonctionnement ajoutée : tests systématiques à chaque fin de bloc (Mode AUTO / Mode GUIDÉ)
+
+### Fichiers créés / modifiés
+- `backend-pays/prisma/schema.prisma` (onDelete: Cascade ligne 94)
+- `backend-pays/prisma/migrations/20260606063341_alert_cascade_delete/migration.sql` (nouveau)
+- `CLAUDE.md` (section "Tests de fin de bloc", roadmap Blocs 1-4 marqués ✓)
+- `doc/journal/SESSION-LOG.md`
+- `doc/glossaire.md` (entrée onDelete: Cascade)
+- `doc/doc_prepa/futurekawa_notes.md` (section 4d bug fix)
+- `memory/feedback_collaboration.md` (Règle 6)
+
+### Décisions clés actées
+- `onDelete: Cascade` sur `Alert.lot` : suppression d'un lot supprime toutes ses alertes en cascade — comportement attendu (pas de données orphelines)
+- Mode AUTO activé par défaut pour les tests de fin de bloc — peut être changé à tout moment avec `MODE GUIDÉ`
+
+### Prochain démarrage
+**Bloc 4 — TESTÉ ET CORRIGÉ ✓**
+
+**Mode de test actif : AUTO**
+
+**Bloc 5 — IoT**
+- Firmware ESP32 (Arduino C++) : lecture DHT22 → publication sur `futurekawa/mesure` en JSON
+- Format payload : `{"warehouseId": "...", "temperature": 29.4, "humidity": 54.8}`
+- Fallback si pas d'ESP32 : simulation via `mosquitto_pub` ou script Python
+
+---
+
+## Session 007 — 2026-06-06
+
+### Ce qui a été fait
+- Bloc 5 — IoT : firmware ESP32 + simulateur Python
+- `iot/esp32/config.h` — configuration isolée (WiFi, MQTT, warehouseId, type capteur)
+- `iot/esp32/futurekawa_sensor.ino` — firmware Arduino C++ : WiFi + MQTT + DHT22 (extensible via #ifdef)
+- `iot/simulation/simulate_sensor.py` — simulateur Python : 3 scénarios (nominal, hors-seuil, limite), configurable par CLI
+- `iot/README.md` — doc câblage, flash ESP32, usage simulateur
+- Simulation testée : 3 messages nominaux Brésil + 2 messages hors-seuil Colombie → alertes générées en BDD ✅
+- `paho-mqtt` installé globalement sur le poste
+
+### Fichiers créés
+- `iot/esp32/config.h`
+- `iot/esp32/futurekawa_sensor.ino`
+- `iot/simulation/simulate_sensor.py`
+- `iot/README.md`
+
+### Décisions clés actées
+- Firmware découplé du backend via contrat MQTT fixe — adaptation matériel = modifier `config.h` + 10 lignes max dans le `.ino`
+- Simulateur Python couvre les 3 scénarios de démo jury : nominal / hors-seuil / cas limite
+- Matériel réel non connu → `config.h` documente les variantes supportées (DHT22, DHT11, SHT31, simulation)
+
+### Prochain démarrage
+**Bloc 5 — TERMINÉ ✓**
+
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt en DB)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)

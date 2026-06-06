@@ -52,6 +52,27 @@ Prêt pour l'étape suivante ?
 
 ---
 
+## Tests de fin de bloc — RÈGLE
+
+**À la fin de chaque bloc, Claude teste systématiquement ce qui vient d'être mis en place.**
+
+Deux modes disponibles — le mode actif est indiqué dans le SESSION-LOG. Taper `MODE AUTO` ou `MODE GUIDÉ` à tout moment pour changer.
+
+### Mode AUTO (actif par défaut)
+Claude exécute tous les tests et affiche les résultats en temps réel :
+- Commandes lancées visibles avec leur sortie
+- Bugs détectés et corrigés dans la foulée (avec plan + GO avant correction)
+- Rapport final sous forme de tableau ✅/❌
+
+### Mode GUIDÉ
+Claude génère un protocole de test que l'utilisateur exécute lui-même, pas à pas :
+- Étapes numérotées avec commandes exactes à copier-coller
+- Résultat attendu pour chaque étape
+- Critères de validation explicites (ce que tu dois voir pour que ça soit OK)
+- L'utilisateur rapporte le résultat, Claude analyse et oriente si ça ne passe pas
+
+---
+
 ## Projet
 
 **FutureKawa** — Plateforme de suivi des stocks et des conditions de stockage de grains de café, multi-pays, avec intégration IoT.
@@ -130,24 +151,26 @@ Détail dans `doc/adr/`.
 ## Roadmap (état macro)
 
 ```
-[ ] Bloc 1  — Init monorepo
+[x] Bloc 1  — Init monorepo
               Structure dossiers, docker-compose.yml de base,
               Prisma init, service Mosquitto
 
-[ ] Bloc 2  — Socle BDD
+[x] Bloc 2  — Socle BDD
               Schémas Prisma (pays, entrepôts, lots, mesures, alertes, users)
               TimescaleDB hypertable, seeds 3 pays
 
-[ ] Bloc 3  — CI Jenkins (squelette)
+[x] Bloc 3  — CI Jenkins (squelette)
               Jenkinsfile : install + lint + placeholder tests
 
-[ ] Bloc 4  — Backend pays
+[x] Bloc 4  — Backend pays
               API REST CRUD lots, ingestion MQTT → TimescaleDB
               Règles d'alerte seuils + péremption
+              ↳ Testé session 006 — onDelete: Cascade corrigé
 
-[ ] Bloc 5  — IoT
-              ESP32 → MQTT broker → backend pays (end-to-end)
-              Démo live ou scénario reproductible
+[x] Bloc 5  — IoT
+              Firmware ESP32 (config.h isolé, extensible tout capteur)
+              Simulateur Python 3 scénarios (nominal / hors-seuil / limite)
+              Testé session 007 ✓
 
 [ ] Bloc 6  — Auth
               NextAuth.js, login, middleware protège-routes, rôles

@@ -91,7 +91,7 @@ model Measurement {
 model Alert {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   lotId      String    @db.Uuid
-  lot        Lot       @relation(fields: [lotId], references: [id])
+  lot        Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
   type       AlertType
   message    String
   isResolved Boolean   @default(false)
