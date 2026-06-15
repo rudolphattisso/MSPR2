@@ -86,28 +86,40 @@ sequenceDiagram
     participant NodeRED
     participant Email
 
-    ESP32->>Mosquitto: PUBLISH futurekawa/BR/wh-001/.../measurements<br/>{"temp": 32.1, "humidity": 57.3}
-    Mosquitto-->>BackendPays: (abonné) payload reçu
-    Mosquitto-->>NodeRED: (abonné) payload reçu
+    ESP32->>Mosquitto: PUBLISH futurekawa/mesure<br/>{"warehouseId":"...","temperature":32.1,"humidity":57.3}
+    Mosquitto-->>BackendPays: (abonné QoS 1) payload reçu
+    Mosquitto-->>NodeRED: (abonné) payload reçu — Bloc 8
 
     BackendPays->>TimescaleDB: INSERT INTO measurements
     Note over BackendPays,TimescaleDB: PK composite (id, recordedAt)<br/>requis par TimescaleDB
 
-    NodeRED->>NodeRED: Vérifier seuils (temp > 32°C ?)
-    alt Seuil dépassé
-        NodeRED->>Email: Envoyer alerte responsable
-        NodeRED->>BackendPays: POST /api/alerts
+    BackendPays->>BackendPays: checkMeasurementAlerts() fire-and-forget
+    alt Seuil température ou humidité dépassé
+        BackendPays->>TimescaleDB: INSERT INTO alerts + UPDATE lot.status → EN_ALERTE
     end
+
+    Note over NodeRED,Email: Bloc 8 — Node-RED lit les alertes<br/>et envoie les emails responsables
 ```
 
-### Structure du topic MQTT
+### Topic MQTT
 
 ```
-futurekawa / {pays} / {entrepôt} / sensors / {capteur} / measurements
-              BR      wh-001        esp32-01
+futurekawa/mesure
 ```
 
-Le broker distribue le même message au `backend-pays` ET à Node-RED simultanément. L'ESP32 ne sait pas qui écoute.
+Topic unique pour toutes les mesures de tous les pays. L'entrepôt est identifié par le champ `warehouseId` dans le payload — pas dans le topic. Le broker distribue le même message au `backend-pays` ET à Node-RED simultanément.
+
+### Format du payload
+
+```json
+{
+  "warehouseId": "00000000-0000-0000-0000-000000000001",
+  "temperature": 29.4,
+  "humidity":    54.8
+}
+```
+
+Le backend-pays détermine le pays et les seuils en lisant l'entrepôt depuis la BDD (`warehouse.country.idealTemp`…).
 
 ---
 
@@ -134,9 +146,8 @@ erDiagram
     Lot {
         uuid id PK
         string reference
-        float weightKg
         datetime storedAt
-        string status "CONFORME / EN_ALERTE / PERIME"
+        string status "CONFORME | EN_ALERTE | PERIME"
         string warehouseId FK
     }
 
@@ -150,19 +161,18 @@ erDiagram
 
     Alert {
         uuid id PK
-        string type "TEMPERATURE / HUMIDITY / EXPIRY"
-        string severity "WARNING / CRITICAL"
+        string type "SEUIL_TEMPERATURE | SEUIL_HUMIDITE | PEREMPTION"
         string message
-        boolean resolved
+        boolean isResolved
         datetime createdAt
-        string lotId FK
-        string warehouseId FK
+        datetime resolvedAt
+        string lotId FK "onDelete: Cascade"
     }
 
     User {
         uuid id PK
         string email
-        string role "ADMIN / MANAGER_PAYS / VIEWER"
+        string role "ADMIN | MANAGER_PAYS | VIEWER"
         string countryId FK
     }
 
@@ -170,8 +180,7 @@ erDiagram
     Country ||--o{ User : "rattaché à"
     Warehouse ||--o{ Lot : "stocke"
     Warehouse ||--o{ Measurement : "mesurée par"
-    Lot ||--o{ Alert : "déclenche"
-    Warehouse ||--o{ Alert : "associée à"
+    Lot ||--o{ Alert : "déclenche (cascade)"
 ```
 
 ### Pourquoi PostgreSQL + TimescaleDB ?
@@ -183,7 +192,60 @@ Ce ne sont pas deux bases différentes — TimescaleDB est une **extension Postg
 
 ---
 
-## 5. Pipeline CI/CD
+## 5. Couche IoT
+
+### Principe de découplage
+
+Le firmware ESP32 et le backend sont **totalement découplés** — ils ne se connaissent pas. Leur seul point de contact est le contrat MQTT :
+
+```
+Topic   : futurekawa/mesure
+Payload : {"warehouseId": "...", "temperature": 29.4, "humidity": 54.8}
+```
+
+Changer de matériel (DHT22 → SHT31, ESP32 → Raspberry Pi) = modifier le firmware uniquement. Le backend ne change pas.
+
+### Firmware ESP32 (`iot/esp32/`)
+
+Deux fichiers :
+
+| Fichier | Rôle |
+|---|---|
+| `config.h` | Tout ce qui change par déploiement : WiFi, IP broker, warehouseId, type capteur |
+| `futurekawa_sensor.ino` | Logique fixe : WiFi + MQTT + lecture capteur + publication JSON |
+
+Adaptation à un nouveau capteur = décommenter une ligne dans `config.h` + ajouter un `#ifdef` dans le `.ino`. Le reste est inchangé.
+
+### Simulateur Python (`iot/simulation/simulate_sensor.py`)
+
+Remplace l'ESP32 pour les tests et la démo jury :
+
+```bash
+# Mesures dans les seuils (aucune alerte)
+python simulate_sensor.py --country BR
+
+# Mesures hors seuils (déclenche SEUIL_TEMPERATURE + SEUIL_HUMIDITE)
+python simulate_sensor.py --country BR --scenario hors-seuil --count 5
+
+# Cas limite (exactement à la frontière ±3°C / ±2%)
+python simulate_sensor.py --scenario limite
+```
+
+### Cycle de vie d'une mesure (de l'ESP32 à l'alerte)
+
+```
+ESP32 lit DHT22
+    ↓ JSON publié sur futurekawa/mesure (MQTT QoS 1)
+Worker mqtt-worker.ts reçoit
+    ↓ INSERT measurements (TimescaleDB)
+    ↓ checkMeasurementAlerts() [fire-and-forget]
+        → compare avec country.idealTemp ± tempTolerance
+        → si violation → INSERT alert + UPDATE lot.status = EN_ALERTE
+```
+
+---
+
+## 6. Pipeline CI/CD
 
 ### Structure du Jenkinsfile
 
@@ -223,7 +285,7 @@ Le bloc `tools { nodejs 'node-20' }` requiert :
 
 ---
 
-## 6. Cheminement de développement
+## 7. Cheminement de développement
 
 La roadmap suit une logique de dépendances stricte : chaque bloc s'appuie sur les précédents.
 
@@ -233,9 +295,9 @@ flowchart TD
     B2[Bloc 2\nSchéma BDD + Seeds\n✅] --> B3
     B3[Bloc 3\nCI Jenkins squelette\n✅] --> B4
     B2 --> B4
-    B4[Bloc 4\nAPI backend pays\n⬜] --> B5
+    B4[Bloc 4\nAPI backend pays\n✅] --> B5
     B4 --> B6
-    B5[Bloc 5\nIoT ESP32 end-to-end\n⬜] --> B7
+    B5[Bloc 5\nIoT ESP32 end-to-end\n✅] --> B7
     B6[Bloc 6\nAuth NextAuth.js\n⬜] --> B7
     B4 --> B7
     B7[Bloc 7\nFrontend + agrégateur\n⬜] --> B8
@@ -255,7 +317,7 @@ flowchart TD
 
 ---
 
-## 7. Décisions clés et leur pourquoi
+## 8. Décisions clés et leur pourquoi
 
 ### Next.js pour un backend API pur
 
@@ -275,7 +337,7 @@ MongoDB aurait sa place pour stocker les payloads MQTT bruts en production. Mais
 
 ---
 
-## 8. Pour aller plus loin
+## 9. Pour aller plus loin
 
 - `doc/adr/` — Décisions architecturales détaillées (ADR-0001 à ADR-0009)
 - `doc/glossaire.md` — Définitions de tous les termes techniques
