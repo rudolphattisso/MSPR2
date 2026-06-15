@@ -260,3 +260,41 @@
 - Provider Credentials (email + password hashé bcrypt en DB)
 - Middleware protège toutes les routes `/api/*`
 - Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
+
+---
+
+## Session 008 — 2026-06-06
+
+### Ce qui a été fait
+- Skill global `/test` créé (`~/.claude/skills/test/SKILL.md`) — validateur de fin de phase,
+  auto-détection stack, Mode AUTO / Mode GUIDÉ, applicable à tout projet
+- `/test guidé` exécuté sur Bloc 4 → protocole 20 étapes généré (test du skill ✅)
+- `doc/glossaire.md` complété : Firmware, Flash, GPIO, Pull-up (résistance)
+- `doc/guide-technique.md` mis à jour :
+  - Topic MQTT corrigé (`futurekawa/mesure` au lieu de la hiérarchie erronée)
+  - ERD corrigé (Alert : champs réels, types FR, onDelete Cascade ; Lot : weightKg supprimé)
+  - Séquence flux corrigée (backend-pays crée les alertes, Node-RED = Bloc 8 seulement)
+  - Section 5 "Couche IoT" ajoutée (firmware, simulateur, cycle de vie mesure)
+  - Roadmap : Blocs 4 et 5 passés en ✅
+  - Numérotation sections mise à jour (5 → 6 → 7 → 8 → 9)
+
+### Fichiers créés / modifiés
+- `~/.claude/skills/test/SKILL.md` (nouveau — global)
+- `doc/glossaire.md` (Firmware, Flash, GPIO, Pull-up)
+- `doc/guide-technique.md` (corrections MQTT + ERD + section IoT)
+
+### Décisions clés actées
+- Skill `/test` global en `skills/SKILL.md` (format officiel avec frontmatter YAML),
+  distinct de `/test-bloc` projet (`.claude/commands/`)
+- `guide-technique.md` = source de vérité pédagogique — à corriger dès qu'une implémentation diverge
+
+### Prochain démarrage
+**Bloc 5 — DOCS MIS À JOUR ✓**
+
+**Mode de test actif : AUTO**
+
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt en DB)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
