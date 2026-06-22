@@ -203,3 +203,4 @@ Détail complet dans `ROADMAP.md` (à créer).
 1. Lire `doc/journal/SESSION-LOG.md` — dernière entrée
 2. Champ **"Prochain démarrage"** = première action à faire
 3. Coder
+
