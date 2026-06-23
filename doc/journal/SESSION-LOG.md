@@ -418,3 +418,37 @@
 - Provider Credentials (email + password hashé bcrypt en DB)
 - Middleware protège toutes les routes `/api/*`
 - Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
+
+---
+
+## Session 012 — 2026-06-23
+
+### Ce qui a été fait
+- Flash ESP8266 confirmé KO sur Windows 10 également (KO W10 + W11) → décision définitive : simulateur Python = fallback IoT officiel
+- Simulation IoT testée et validée end-to-end en Mode AUTO :
+  - Scénario nominal Brésil : 3 messages MQTT → 3 mesures en base ✅
+  - Scénario hors-seuil Brésil : 3 messages → 12 alertes (2 types × 2 lots actifs × 3 messages) ✅
+  - Chaîne complète MQTT → TimescaleDB → alertes confirmée fonctionnelle
+- `CLAUDE.md` mis à jour : section "Onboarding équipe" ajoutée
+- `.claude/commands/onboarding.md` créé : tutoriel interactif 5 étapes pour nouveaux membres
+
+### Fichiers créés / modifiés
+- `CLAUDE.md` (section Onboarding équipe)
+- `.claude/commands/onboarding.md` (nouveau)
+- `doc/journal/SESSION-LOG.md`
+- `doc/doc_prepa/futurekawa_notes.md` (décision flash + commande démo simulateur)
+
+### Décisions clés actées
+- Flash ESP8266 abandonné définitivement — simulateur Python = mode IoT officiel démo jury
+- Onboarding via `/onboarding` : chaque nouveau membre passe par ce tutoriel avant de coder
+
+### Prochain démarrage
+**Bloc 5 — SIMULATEUR VALIDÉ ✓**
+
+**Mode de test actif : AUTO**
+
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt en DB)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
