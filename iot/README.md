@@ -75,60 +75,60 @@ python simulate_sensor.py --country EC --scenario hors-seuil --count 5 --interva
 
 ---
 
-## Option B — Firmware ESP32 (matériel physique)
+## Option B — Firmware ESP8266 (matériel physique)
 
-### Matériel actuel (à compléter quand fourni)
-- [ ] Microcontrôleur : ___________
-- [ ] Capteur : ___________
-- [ ] Alimentation : ___________
+### Matériel — Kit OSOYOO NodeMCU IoT Kit
+- **Microcontrôleur :** NodeMCU v2/v3 (ESP8266)
+- **Capteur :** DHT11 (température ±2°C / humidité ±5%)
+- **Alimentation :** USB via NodeMCU
 
 ### Bibliothèques Arduino à installer (Gestionnaire de bibliothèques)
 - **PubSubClient** (Nick O'Leary) — client MQTT
 - **ArduinoJson** (Benoit Blanchon) — sérialisation JSON
-- **DHT sensor library** (Adafruit) — si capteur DHT22 ou DHT11
-- **Adafruit SHT31 Library** — si capteur SHT31
+- **DHT sensor library** (Adafruit) + dépendances Adafruit
 
-### Schéma de câblage (DHT22 — à adapter selon matériel reçu)
+### Setup Arduino IDE
+
+1. **Fichier → Préférences → URLs gestionnaire de cartes** :
+   ```
+   https://arduino.esp8266.com/stable/package_esp8266com_index.json
+   ```
+2. **Outils → Gestionnaire de cartes** → installer `esp8266 by ESP8266 Community`
+3. **Outils → Type de carte** → `NodeMCU 1.0 (ESP-12E Module)`
+4. **Outils → Port** → le port COM apparu après branchement USB
+
+### Câblage DHT11 sur NodeMCU
+
 ```
-ESP32          DHT22
-3.3V    →      VCC (pin 1)
-GND     →      GND (pin 4)
-GPIO 4  →      DATA (pin 2)
-               10kΩ entre VCC et DATA (pull-up)
+DHT11          NodeMCU
+VCC     →      3.3V
+GND     →      GND
+DATA    →      D5  (GPIO14)
+               résistance 10kΩ entre DATA et 3.3V (pull-up — incluse dans le kit)
 ```
+
+> Éviter D3, D4, D8 : pins de boot sensibles. D5 est le choix sûr.
 
 ### Configuration avant flash
 
-Ouvrir `iot/esp32/config.h` et modifier :
+Ouvrir `iot/esp8266/config.h` et modifier :
 
 ```c
 #define WIFI_SSID       "ton_reseau"
 #define WIFI_PASSWORD   "ton_mdp"
 #define MQTT_BROKER     "192.168.x.x"   // IP de la machine Docker
-#define WAREHOUSE_ID    "00000000-..."  // UUID de l'entrepôt
-#define SENSOR_DHT22                    // décommenter selon capteur reçu
+#define WAREHOUSE_ID    "00000000-..."  // UUID de l'entrepôt (voir seeds)
+// SENSOR_DHT11 est actif par défaut — ne pas modifier
 ```
-
-### Adapter à un nouveau capteur (quand matériel connu)
-
-1. Ajouter `#define SENSOR_MON_CAPTEUR` dans `config.h`
-2. Dans `futurekawa_sensor.ino`, ajouter un bloc :
-```cpp
-#ifdef SENSOR_MON_CAPTEUR
-  #include <BibliothequeMonCapteur.h>
-  MonCapteur capteur;
-#endif
-```
-3. Ajouter les cas dans `readTemperature()` et `readHumidity()`
-4. **Aucune autre modification nécessaire** — le reste du firmware est inchangé
 
 ### Flasher
 
-1. Ouvrir `iot/esp32/futurekawa_sensor.ino` dans Arduino IDE
-2. Sélectionner la carte : `ESP32 Dev Module`
-3. Sélectionner le port COM
-4. `Téléverser`
-5. Ouvrir le Moniteur Série (115200 baud) pour voir les logs
+1. Brancher le NodeMCU en USB
+2. Ouvrir `iot/esp8266/futurekawa_sensor.ino` dans Arduino IDE
+3. Vérifier : **Outils → Type de carte** = `NodeMCU 1.0 (ESP-12E Module)`
+4. Vérifier : **Outils → Port** = le bon port COM
+5. Cliquer `Téléverser` (flèche →)
+6. Ouvrir **Outils → Moniteur Série** à **115200 baud** pour voir les logs
 
 ---
 

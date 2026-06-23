@@ -4,6 +4,19 @@ Mémoire persistante. À lire au début de chaque session.
 
 ---
 
+## Détection nouveau membre — PRIORITÉ ABSOLUE
+
+**Au tout début de chaque session, avant toute autre chose, Claude pose cette question :**
+
+> "Est-ce ta première session sur ce projet ?"
+
+- Si **oui** → lancer immédiatement le tutoriel `/onboarding` avant de faire quoi que ce soit d'autre
+- Si **non** → lire `doc/journal/SESSION-LOG.md` et reprendre normalement
+
+Ne jamais supposer que l'utilisateur connaît le workflow. En cas de doute → proposer `/onboarding`.
+
+---
+
 ## Mode de travail — RÈGLE FONDAMENTALE
 
 1. Présenter le plan numéroté avant tout développement
@@ -203,3 +216,71 @@ Détail complet dans `ROADMAP.md` (à créer).
 1. Lire `doc/journal/SESSION-LOG.md` — dernière entrée
 2. Champ **"Prochain démarrage"** = première action à faire
 3. Coder
+
+---
+
+## Onboarding équipe — Première fois sur ce projet
+
+### 1. Installer Claude Code
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+Ouvrir un terminal **à la racine de ce repo** et lancer `claude`.
+
+### 2. Démarrer sa première session
+
+Dire à Claude :
+> "Je suis [prénom], je rejoins le projet FutureKawa. Présente-moi l'état du projet et dis-moi où en est l'équipe."
+
+Claude lira ce fichier + `doc/journal/SESSION-LOG.md` et donnera le contexte complet sans qu'on ait à tout ré-expliquer.
+
+### 3. Règles absolues — à ne jamais contourner
+
+> Ces règles s'appliquent à tous les membres de l'équipe, sans exception.
+
+**Règle 1 — Aucun code sans plan validé.**
+Claude présente toujours un plan numéroté avant d'écrire la moindre ligne de code.
+Tu dois répondre explicitement **"oui"** ou **"go"** pour déclencher l'implémentation.
+Si Claude commence à coder sans plan → l'arrêter immédiatement et lui demander le plan.
+
+**Règle 2 — Une étape à la fois.**
+Claude n'enchaîne jamais deux étapes sans confirmation entre les deux.
+Même si une tâche semble triviale, le GO est obligatoire à chaque étape.
+
+**Règle 3 — Expliquer avant de choisir.**
+Pour chaque choix technique, Claude explique le POURQUOI avant de l'implémenter.
+Si tu ne comprends pas un choix → poser la question avant le GO.
+
+**Règle 4 — Tester à la fin de chaque bloc.**
+Claude teste systématiquement ce qui vient d'être implémenté.
+Mode par défaut : AUTO (Claude exécute + affiche les résultats).
+Taper `MODE GUIDÉ` si tu préfères exécuter toi-même les commandes.
+
+**Règle 5 — Toujours fermer la session proprement.**
+Avant de fermer, demander à Claude de mettre à jour :
+- `doc/journal/SESSION-LOG.md` (résumé + champ "Prochain démarrage")
+- `doc/glossaire.md` (nouveaux termes introduits dans la session)
+- `README.md` (si nouveau service Docker, nouvelle dépendance ou commande)
+
+### 4. Commandes utiles en session
+
+| Ce que tu tapes | Ce que Claude fait |
+|---|---|
+| `reprends la session` | Lit SESSION-LOG et repart du bon endroit |
+| `où en est-on ?` | Résume l'état du projet et le prochain bloc |
+| `MODE GUIDÉ` | Tests pas à pas — toi tu exécutes, Claude analyse |
+| `MODE AUTO` | Tests automatiques — Claude exécute et affiche |
+| `/save-session` | Clôture propre de la session (met à jour tous les docs) |
+
+### 5. Lire avant de toucher à quoi que ce soit
+
+| Document | Contenu |
+|---|---|
+| `doc/journal/SESSION-LOG.md` | Historique des sessions + état actuel + prochain démarrage |
+| `doc/guide-technique.md` | Architecture détaillée, ERD, flux MQTT, stack |
+| `doc/adr/` | Toutes les décisions techniques et leur justification |
+| `README.md` | Commandes de démarrage de la stack Docker |
+| `doc/glossaire.md` | Définitions des termes techniques du projet |
+

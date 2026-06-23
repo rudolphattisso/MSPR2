@@ -298,3 +298,123 @@
 - Provider Credentials (email + password hashé bcrypt en DB)
 - Middleware protège toutes les routes `/api/*`
 - Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
+
+---
+
+## Session 011 — 2026-06-20
+
+### Ce qui a été fait
+- Correction typo SSID dans `config.h.example` : `Futurkawa_26` → `Futurekawa_26`
+- Analyse complète du firmware `.ino` par Opus : paradigme Arduino (setup/loop vs main), structure sketch, qualité code — aucun défaut bloquant pour la démo
+- Debug long du flash ESP8266 : toutes les pistes Windows épuisées
+  - Arduino IDE esptool v3.0 ❌
+  - esptool v5.3.0 pip ❌
+  - ESP Flash Download Tool (Espressif officiel) ❌
+- Root cause identifié : driver CH340 Windows 11 rejette `SetCommState` (`ERROR_GEN_FAILURE` = 31) — spécifique Windows 11
+- Solution retenue : flasher depuis un PC **Windows 10** (bug absent sur W10)
+- `.bin` déjà compilé et disponible, chemin documenté
+- Création `iot/flash.ps1` (script de référence pour futurs flash)
+
+### Fichiers créés / modifiés
+- `iot/esp8266/futurekawa_sensor/config.h.example` (typo SSID corrigé)
+- `iot/flash.ps1` (nouveau)
+
+### Décisions clés actées
+- SSID hotspot de référence : `Futurekawa_26` (corrigé depuis `Rvna_7.0`)
+- Flash impossible sur Windows 11 (CH340 driver) → Windows 10 requis pour cette étape
+- Firmware compilé = autonome après flash, indépendant de l'OS du laptop
+
+### Prochain démarrage
+**Flash ESP8266 sur Windows 10**
+1. Cloner le repo sur un PC Windows 10
+2. Ouvrir `iot/esp8266/futurekawa_sensor/futurekawa_sensor.ino` dans Arduino IDE
+3. Créer `config.h` depuis `config.h.example` — renseigner WiFi password + WAREHOUSE_ID
+4. Board : `NodeMCU 1.0 (ESP-12E Module)` → Téléverser
+5. Moniteur Série 115200 baud → valider logs WiFi + MQTT
+6. Si OK → test end-to-end (MQTT → BDD → alertes)
+
+**OU** utiliser le `.bin` déjà compilé :
+`C:\Users\attis\AppData\Local\arduino\sketches\BA31ADC5B0B753D548BDD9F7AC594FC7\futurekawa_sensor.ino.bin`
+→ copier sur clé USB + flasher via `python -m esptool` ou Arduino IDE sur W10
+
+**Mode de test actif : AUTO**
+
+---
+
+## Session 010 — 2026-06-19
+
+### Ce qui a été fait
+- Reprise de zéro du process de config Arduino IDE (étapes vérifiées une par une)
+- Arduino IDE 2.3.10 déjà installé ✅
+- Support carte ESP8266 installé : `esp8266 by ESP8266 Community` ✅
+- Bibliothèques installées : PubSubClient, ArduinoJson, DHT sensor library (Adafruit) ✅
+- Créé `iot/esp8266/futurekawa_sensor/config.h.example` (protection credentials WiFi)
+- `config.h` ajouté au `.gitignore` → ne sera jamais commité
+- Décision : Windows Mobile Hotspot (`Rvna_7.0`) comme réseau de référence → IP fixe `192.168.137.1`
+- `config.h.example` mis à jour : `MQTT_BROKER = 192.168.137.1`, `WIFI_SSID = Rvna_7.0`
+- Câblage DHT11 sur D5 effectué ✅
+- Arduino IDE a déplacé le `.ino` dans `futurekawa_sensor/` (convention Arduino sketch)
+- Déplacement `config.h` et `config.h.example` dans `futurekawa_sensor/` pour cohérence
+- `.gitignore` mis à jour avec le nouveau chemin
+- Flash tenté → **compilation OK ✅** — upload KO (PermissionError COM, driver CH340)
+- Driver CH340 réinstallé → redémarrage machine en cours
+
+### Fichiers créés / modifiés
+- `iot/esp8266/futurekawa_sensor/config.h.example` (créé + déplacé)
+- `iot/esp8266/futurekawa_sensor/config.h` (déplacé — gitignore)
+- `.gitignore` (chemin config.h mis à jour)
+
+### Décisions clés actées
+- Windows Mobile Hotspot comme réseau de référence → IP `192.168.137.1` toujours fixe, peu importe la localisation (maison/école)
+- `config.h` gitignore + `config.h.example` commité → protection des credentials WiFi
+- Convention Arduino : le `.ino` doit être dans un dossier du même nom → `config.h` doit être dans le même dossier que le `.ino`
+
+### Prochain démarrage
+**Étape 6/7 — Flash (reprise après redémarrage machine)**
+1. Activer le hotspot Windows `Rvna_7.0`
+2. Rebrancher le NodeMCU en USB
+3. Arduino IDE → vérifier port COM → **Téléverser**
+4. Ouvrir **Moniteur Série à 115200 baud** → valider les logs WiFi + MQTT
+5. Si OK → Étape 7/7 : test end-to-end (MQTT → BDD → alertes)
+
+**Mode de test actif : AUTO**
+
+---
+
+## Session 009 — 2026-06-15
+
+### Ce qui a été fait
+- Matériel IoT confirmé : Kit OSOYOO NodeMCU IoT Kit (ESP8266 + DHT11)
+- Création `iot/esp8266/config.h` — DHT11 actif par défaut, pin D5, client ID `esp8266-br-wh001`
+- Création `iot/esp8266/futurekawa_sensor.ino` — adaptation ESP8266 : `#include <ESP8266WiFi.h>` (seul changement vs ESP32), câblage D5 documenté dans les commentaires
+- `iot/README.md` mis à jour : section "Option B" remplacée (OSOYOO, DHT11, câblage D5, setup Arduino IDE)
+- `doc/guide-technique.md` section 5 mis à jour : matériel retenu, tableau composants, explication pin D5 (boot safety), comparatif ESP8266 vs ESP32
+
+### Fichiers créés / modifiés
+- `iot/esp8266/config.h` (nouveau)
+- `iot/esp8266/futurekawa_sensor.ino` (nouveau)
+- `iot/README.md` (section Option B réécrite)
+- `doc/guide-technique.md` (section 5 Couche IoT mise à jour)
+
+### Décisions clés actées
+- Matériel retenu : ESP8266 (NodeMCU) + DHT11 — capteur inclus dans le kit OSOYOO
+- Pin D5 (GPIO14) pour le DHT11 — évite les pins de boot (D3/D4/D8) sensibles sur ESP8266
+- Seule différence firmware ESP8266 vs ESP32 : `#include <ESP8266WiFi.h>` — architecture découplée validée
+- Dossier `iot/esp32/` conservé comme référence
+
+### Prochain démarrage
+**Bloc 5 — FIRMWARE ESP8266 PRÊT ✓**
+
+**Mode de test actif : AUTO**
+
+**Avant de flasher le NodeMCU :**
+1. Renseigner `iot/esp8266/config.h` : `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_BROKER` (IP machine Docker), `WAREHOUSE_ID`
+2. Câbler DHT11 sur D5 avec résistance 10kΩ pull-up
+3. Brancher USB → Arduino IDE → sélectionner `NodeMCU 1.0 (ESP-12E Module)` + port COM → Téléverser
+4. Moniteur Série 115200 baud pour valider les logs
+
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt en DB)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
