@@ -29,6 +29,17 @@ services:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
 
+  # Boîte mail de test (capture tous les emails en local, aucun envoi réel).
+  # SMTP : 1025  ·  Interface web : http://localhost:8025
+  # Pour de vrais envois, basculer les variables SMTP_* vers Gmail/Resend.
+  mailhog:
+    image: mailhog/mailhog
+    container_name: futurekawa-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   db_data:
   mosquitto_data:
