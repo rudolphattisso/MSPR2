@@ -1,0 +1,1 @@
+python -m esptool --chip esp8266 --port COM3 --baud 115200 --before no-reset --no-stub write-flash 0x0 "C:\Users\attis\AppData\Local\arduino\sketches\BA31ADC5B0B753D548BDD9F7AC594FC7\futurekawa_sensor.ino.bin"

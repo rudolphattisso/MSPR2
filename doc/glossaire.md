@@ -19,6 +19,9 @@ Système de routage de Next.js basé sur la structure de dossiers. Les fichiers 
 
 ## B
 
+**Bootloader mode**
+Mode de démarrage de l'ESP8266 dans lequel il attend qu'un outil extérieur (esptool) lui envoie un nouveau firmware via le port série. Activé en maintenant le bouton FLASH (IO0) enfoncé au moment du reset. Sans auto-reset fonctionnel (DTR/RTS cassés), il faut l'activer manuellement.
+
 **Broker MQTT**
 Serveur intermédiaire qui reçoit les messages publiés par les clients (ESP32) et les redistribue aux abonnés (backend pays, Node-RED). Dans ce projet : Eclipse Mosquitto.
 
@@ -29,6 +32,9 @@ Serveur intermédiaire qui reçoit les messages publiés par les clients (ESP32)
 
 ## C
 
+**CH340**
+Puce USB-Serial intégrée sur la plupart des boards NodeMCU (clones bon marché). Convertit la communication USB du PC en signal série compréhensible par l'ESP8266. Nécessite un driver Windows (`CH341SER.exe`) — sans lui, le port COM apparaît avec une erreur dans le Gestionnaire de périphériques et l'upload Arduino échoue avec `PermissionError`.
+
 **CI/CD (Continuous Integration / Continuous Delivery)**
 Pratique d'automatisation : chaque modification de code déclenche automatiquement build, tests et packaging. Dans ce projet : Jenkins avec Jenkinsfile.
 
@@ -38,6 +44,9 @@ Toute application capable de publier ou de s'abonner à des topics via un broker
 ---
 
 ## D
+
+**DHT11**
+Capteur électronique temp/humidité, version économique du DHT22. Précision : ±2°C / ±5% humidité. Même protocole single-wire, même bibliothèque Adafruit. Utilisé dans ce projet (kit OSOYOO). Suffisant pour le prototype ; DHT22 recommandé en production.
 
 **DHT22**
 Capteur électronique mesurant température et humidité relative. Précision : ±0.5°C / ±2-5% humidité. Communique via protocole single-wire avec le microcontrôleur.
@@ -52,8 +61,14 @@ Snapshot immuable d'un environnement d'exécution. Chaque service du projet a sa
 
 ## E
 
+**esptool**
+Outil Python open-source utilisé en arrière-plan par Arduino IDE pour uploader le firmware compilé sur un ESP8266/ESP32 via le port série. L'erreur `A fatal esptool.py error occurred` indique un problème de communication avec la carte (driver manquant, port occupé, câble data absent).
+
 **ESP32**
-Microcontrôleur avec Wi-Fi et Bluetooth intégrés. Supporte Arduino (C++) et MicroPython. Utilisé ici pour lire le capteur DHT22 et publier les mesures via MQTT.
+Microcontrôleur avec Wi-Fi et Bluetooth intégrés. Supporte Arduino (C++) et MicroPython. Successeur de l'ESP8266 : plus de GPIO, plus puissant. Référence dans `iot/esp32/`.
+
+**ESP8266**
+Microcontrôleur WiFi de la famille Espressif, prédécesseur de l'ESP32. 11 GPIO utilisables, un seul canal ADC (A0). Bibliothèque Arduino : `ESP8266WiFi.h` (remplace `WiFi.h` de l'ESP32). Utilisé dans ce projet via la board NodeMCU. Point d'attention : certains pins (D3/D4/D8) influencent le mode de boot — les éviter pour les capteurs.
 
 ---
 
@@ -84,6 +99,9 @@ Broches programmables d'un microcontrôleur (ESP32 : 30+ broches). Chaque broche
 ---
 
 ## H
+
+**Hotspot Windows (Point d'accès mobile)**
+Fonctionnalité Windows qui transforme le laptop en point d'accès WiFi. L'IP du laptop sur ce réseau virtuel est toujours `192.168.137.1` — fixe, peu importe la connexion amont (WiFi école, WiFi maison, USB-tethering 5G). Dans ce projet : utilisé pour que l'ESP8266 trouve toujours le broker MQTT à la même adresse sans modifier `config.h`.
 
 **Hypertable (TimescaleDB)**
 Table PostgreSQL transformée par TimescaleDB pour optimiser les données temporelles. Elle est automatiquement partitionnée en **chunks** (intervalles de temps), rendant les requêtes `WHERE recorded_at BETWEEN ...` très efficaces.
@@ -121,6 +139,9 @@ Protocole de messagerie publish/subscribe léger, conçu pour les réseaux contr
 ---
 
 ## N
+
+**NodeMCU**
+Board de développement basée sur l'ESP8266 (module ESP-12E). Intègre un port USB (via CH340/CP2102), un régulateur 3.3V et expose les GPIO sous forme de pins étiquetés D0–D8. Les labels sérigraphiés (D5) ne correspondent pas aux numéros GPIO internes (D5 = GPIO14) — utiliser les constantes Arduino (`D5`) plutôt que les numéros bruts pour éviter les erreurs.
 
 **NextAuth.js**
 Bibliothèque d'authentification native Next.js. Gère sessions, JWT, providers (Credentials, OAuth). Intégration via `auth()` côté serveur et `useSession()` côté client.
