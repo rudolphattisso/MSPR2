@@ -1,7 +1,7 @@
 """
 FutureKawa — Simulateur de capteur IoT
 
-Simule un ESP32 + DHT22 sans matériel physique.
+Simule un ESP8266 + DHT11 sans matériel physique.
 Publie des messages MQTT sur futurekawa/mesure à intervalle régulier.
 
 Usage :
