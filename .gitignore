@@ -24,6 +24,9 @@ doc/doc_prepa/
 mosquitto/data/
 mosquitto/log/
 
+# IoT — credentials locaux (ne jamais commiter)
+iot/esp8266/futurekawa_sensor/config.h
+
 # OS
 .DS_Store
 Thumbs.db

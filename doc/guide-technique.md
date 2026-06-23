@@ -196,29 +196,59 @@ Ce ne sont pas deux bases différentes — TimescaleDB est une **extension Postg
 
 ### Principe de découplage
 
-Le firmware ESP32 et le backend sont **totalement découplés** — ils ne se connaissent pas. Leur seul point de contact est le contrat MQTT :
+Le firmware et le backend sont **totalement découplés** — ils ne se connaissent pas. Leur seul point de contact est le contrat MQTT :
 
 ```
 Topic   : futurekawa/mesure
 Payload : {"warehouseId": "...", "temperature": 29.4, "humidity": 54.8}
 ```
 
-Changer de matériel (DHT22 → SHT31, ESP32 → Raspberry Pi) = modifier le firmware uniquement. Le backend ne change pas.
+Changer de matériel (DHT11 → DHT22, ESP8266 → Raspberry Pi) = modifier le firmware uniquement. Le backend ne change pas.
 
-### Firmware ESP32 (`iot/esp32/`)
+### Matériel retenu — Kit OSOYOO NodeMCU IoT Kit
+
+| Composant | Référence | Rôle |
+|---|---|---|
+| Microcontrôleur | NodeMCU v2/v3 (ESP8266) | WiFi + MQTT + orchestration |
+| Capteur | DHT11 | Température (±2°C) + Humidité (±5%) |
+| Résistance | 10kΩ | Pull-up sur le pin DATA du DHT11 |
+
+### Firmware ESP8266 (`iot/esp8266/`)
 
 Deux fichiers :
 
 | Fichier | Rôle |
 |---|---|
-| `config.h` | Tout ce qui change par déploiement : WiFi, IP broker, warehouseId, type capteur |
+| `config.h` | Tout ce qui change par déploiement : WiFi, IP broker, warehouseId, type capteur, pin |
 | `futurekawa_sensor.ino` | Logique fixe : WiFi + MQTT + lecture capteur + publication JSON |
 
-Adaptation à un nouveau capteur = décommenter une ligne dans `config.h` + ajouter un `#ifdef` dans le `.ino`. Le reste est inchangé.
+**Seule différence avec une cible ESP32 :** l'include WiFi.
+
+```cpp
+// ESP8266
+#include <ESP8266WiFi.h>
+
+// ESP32 (référence — dossier iot/esp32/ conservé)
+#include <WiFi.h>
+```
+
+Tout le reste — bibliothèques, payload, logique — est identique.
+
+### Câblage DHT11 sur NodeMCU
+
+```
+DHT11          NodeMCU
+VCC     →      3.3V
+GND     →      GND
+DATA    →      D5  (GPIO14)
+               résistance 10kΩ entre DATA et 3.3V
+```
+
+**Pourquoi D5 ?** Les pins D3 (GPIO0), D4 (GPIO2) et D8 (GPIO15) influencent le mode de boot de l'ESP8266 — un niveau bas au démarrage sur ces pins peut empêcher le flash ou bloquer le boot. D5 est neutre au boot.
 
 ### Simulateur Python (`iot/simulation/simulate_sensor.py`)
 
-Remplace l'ESP32 pour les tests et la démo jury :
+Remplace le NodeMCU pour les tests et la démo jury :
 
 ```bash
 # Mesures dans les seuils (aucune alerte)
@@ -231,10 +261,10 @@ python simulate_sensor.py --country BR --scenario hors-seuil --count 5
 python simulate_sensor.py --scenario limite
 ```
 
-### Cycle de vie d'une mesure (de l'ESP32 à l'alerte)
+### Cycle de vie d'une mesure (du NodeMCU à l'alerte)
 
 ```
-ESP32 lit DHT22
+NodeMCU lit DHT11
     ↓ JSON publié sur futurekawa/mesure (MQTT QoS 1)
 Worker mqtt-worker.ts reçoit
     ↓ INSERT measurements (TimescaleDB)

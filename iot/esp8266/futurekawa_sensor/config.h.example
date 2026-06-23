@@ -1,0 +1,40 @@
+#pragma once
+
+// ============================================================
+// CONFIGURATION — copier ce fichier en config.h et remplir
+// ============================================================
+
+// WiFi
+#define WIFI_SSID       "Futurekawa_26"           // hotspot laptop — SSID fixe
+#define WIFI_PASSWORD   "ton_mot_de_passe"
+
+// Broker MQTT — IP fixe du laptop quand Windows Mobile Hotspot est actif
+#define MQTT_BROKER     "192.168.137.1"
+#define MQTT_PORT       1883
+#define MQTT_CLIENT_ID  "esp8266-br-wh001"  // unique par appareil
+
+// Topic de publication (ne pas modifier)
+#define MQTT_TOPIC      "futurekawa/mesure"
+
+// Identifiant de l'entrepôt surveillé par cet appareil
+// Brésil     : "00000000-0000-0000-0000-000000000001"
+// Équateur   : "00000000-0000-0000-0000-000000000002"
+// Colombie   : "00000000-0000-0000-0000-000000000003"
+#define WAREHOUSE_ID    "00000000-0000-0000-0000-000000000001"
+
+// Intervalle de mesure en millisecondes (30 secondes par défaut)
+#define MEASURE_INTERVAL_MS  30000
+
+// ============================================================
+// CONFIGURATION CAPTEUR — NodeMCU OSOYOO + DHT11
+// ============================================================
+
+// Capteur actif : décommenter UNE seule ligne
+#define SENSOR_DHT11          // DHT11 sur pin D5 (GPIO14) — kit OSOYOO
+// #define SENSOR_DHT22       // variante DHT22 (plus précis)
+// #define SENSOR_SHT31       // capteur SHT31 via I2C
+// #define SENSOR_SIMULATION  // simulation logicielle (pas de capteur physique)
+
+// Broche du capteur — utiliser les constantes NodeMCU (D0–D8)
+// D5 = GPIO14 : safe, évite les pins de boot (D3/D4/D8)
+#define SENSOR_PIN  D5
