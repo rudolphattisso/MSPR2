@@ -452,3 +452,47 @@
 - Provider Credentials (email + password hashé bcrypt en DB)
 - Middleware protège toutes les routes `/api/*`
 - Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
+
+---
+
+## Session 013 — 2026-06-24
+
+### Ce qui a été fait
+- Bloc 8 — Alerting Node-RED : étapes 1 et 2 implémentées
+- `POST /api/alerts` ajouté dans `backend-pays/app/api/alerts/route.ts`
+  → validation des champs requis (lotId, type, message)
+  → vérification que le type est un AlertType connu
+  → vérification que le lot existe en base
+  → création alerte + mise à jour statut lot dans une transaction atomique
+  → protection : si lot déjà PERIME, son statut n'est pas écrasé
+- Service `node-red` ajouté dans `docker-compose.yml`
+  → image `nodered/node-red:latest`, port 1880
+  → volume `./backend-pays/node-red:/data` pour versionner les flows
+  → `extra_hosts: host.docker.internal:host-gateway` (cross-plateforme Windows + Linux)
+  → variable `BACKEND_PAYS_URL` pour appeler le backend depuis le conteneur
+- Dossier `backend-pays/node-red/` créé (`.gitkeep` — flows à venir étape 3)
+- `.env.example` mis à jour : `BACKEND_PAYS_URL` documentée
+- `README.md` mis à jour : Node-RED dans le tableau des services, variable BACKEND_PAYS_URL, ESP32 → ESP8266/simulateur
+- Branche `feat(alerting)` créée depuis `develop` — commits poussés sur cette branche
+
+### Fichiers créés / modifiés
+- `backend-pays/app/api/alerts/route.ts` (POST ajouté)
+- `docker-compose.yml` (service node-red ajouté)
+- `backend-pays/node-red/.gitkeep` (nouveau)
+- `.env.example` (BACKEND_PAYS_URL ajoutée)
+- `README.md` (Node-RED + BACKEND_PAYS_URL + ESP8266)
+- `doc/journal/SESSION-LOG.md`
+
+### Décisions clés actées
+- Node-RED appelle `POST /api/alerts` (pas d'accès direct DB) — conforme ADR-0007
+- `extra_hosts: host.docker.internal:host-gateway` = solution cross-plateforme Docker officielle
+- Branche `feat(alerting)` isolée de `develop` — PR en fin de bloc
+
+### Prochain démarrage
+**Bloc 8 — Étapes 1 et 2 terminées ✓**
+
+**Mode de test actif : AUTO**
+
+**Étape 3/5 — Créer le flow Node-RED (`backend-pays/node-red/flows.json`)**
+- Flow 1 : MQTT in (`futurekawa/mesure`) → vérification seuils par pays → POST /api/alerts → email
+- Flow 2 : cron péremption → interroger GET /api/lots → POST /api/alerts si lot > 365 jours
