@@ -3,11 +3,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return
 
   const { startMqttWorker } = await import("@/lib/mqtt-worker")
-  const { checkAllLotExpirations } = await import("@/lib/alert-rules")
 
   startMqttWorker()
-
-  checkAllLotExpirations().catch((err) =>
-    console.error("[startup] checkAllLotExpirations failed:", err)
-  )
+  // Alerting et péremption délégués à Node-RED (ADR-0007)
 }

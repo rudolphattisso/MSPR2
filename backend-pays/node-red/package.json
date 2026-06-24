@@ -1,0 +1,8 @@
+{
+  "name": "futurekawa-node-red",
+  "description": "Node-RED flows for FutureKawa alerting",
+  "version": "1.0.0",
+  "dependencies": {
+    "node-red-node-email": "2.x"
+  }
+}
