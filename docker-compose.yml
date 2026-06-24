@@ -29,6 +29,21 @@ services:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
 
+  node-red:
+    image: nodered/node-red:latest
+    container_name: futurekawa-nodered
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./backend-pays/node-red:/data
+    environment:
+      - BACKEND_PAYS_URL=${BACKEND_PAYS_URL:-http://host.docker.internal:3001}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mqtt
+
 volumes:
   db_data:
   mosquitto_data:
