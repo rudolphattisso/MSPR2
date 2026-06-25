@@ -496,3 +496,44 @@
 **Étape 3/5 — Créer le flow Node-RED (`backend-pays/node-red/flows.json`)**
 - Flow 1 : MQTT in (`futurekawa/mesure`) → vérification seuils par pays → POST /api/alerts → email
 - Flow 2 : cron péremption → interroger GET /api/lots → POST /api/alerts si lot > 365 jours
+
+---
+
+## Session 014 — 2026-06-25
+
+### Ce qui a été fait
+- Bloc 8 — Alerting Node-RED : étape 3 implémentée
+- `backend-pays/lib/mqtt-worker.ts` : suppression de l'appel à `checkMeasurementAlerts`
+  → Le backend ne crée plus d'alertes lui-même — Node-RED est le seul responsable (ADR-0007)
+- `backend-pays/instrumentation.ts` : suppression de l'appel à `checkAllLotExpirations`
+  → La vérification de péremption au démarrage est remplacée par le cron quotidien Node-RED
+- `backend-pays/node-red/package.json` : créé pour installer `node-red-node-email` automatiquement
+- `backend-pays/node-red/flows.json` : créé avec deux flows complets
+  → Flow 1 : MQTT mesure → vérification seuils → GET lots actifs → POST /api/alerts × lot → email
+  → Flow 2 : cron quotidien → GET tous lots → filtrer > 365 jours → POST /api/alerts → email
+- `.env.example` : variables SMTP ajoutées (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_EMAIL_TO`)
+- Test E2E reporté au Bloc 9 (décision : pas de données en base pour un test manuel)
+- Node-RED vérifié visuellement : flows chargés et visibles sur `http://localhost:1880`
+
+### Fichiers créés / modifiés
+- `backend-pays/lib/mqtt-worker.ts` (suppression checkMeasurementAlerts)
+- `backend-pays/instrumentation.ts` (suppression checkAllLotExpirations)
+- `backend-pays/node-red/package.json` (nouveau)
+- `backend-pays/node-red/flows.json` (nouveau)
+- `.env.example` (variables SMTP)
+
+### Décisions clés actées
+- Suppression de la logique d'alerte du backend → zéro doublon possible
+- Test E2E = Bloc 9 (base de test dédiée, nettoyage automatique après chaque test)
+- SMTP credentials configurés via l'UI Node-RED (`http://localhost:1880`) — jamais en clair dans le code
+
+### Prochain démarrage
+**Bloc 8 — TERMINÉ ✓ (tests E2E au Bloc 9)**
+
+**Mode de test actif : AUTO**
+
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN / MANAGER_PAYS / VIEWER
