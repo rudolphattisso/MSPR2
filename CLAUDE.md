@@ -126,6 +126,7 @@ mspr2/                          ← monorepo
 | BDD relationnelle + timeseries | PostgreSQL 16 + TimescaleDB |
 | Broker MQTT | Eclipse Mosquitto (Docker) |
 | Alerting email | Node-RED (Docker) |
+| Envoi email (vérif compte) | nodemailer + Mailhog (Docker, dev) → Gmail SMTP (prod) |
 | Authentification | NextAuth.js v5 |
 | IoT | ESP32 + capteur temp/humidité (protocole à préciser selon matériel) |
 | CI/CD | Jenkins (Jenkinsfile déclaratif) |
@@ -185,8 +186,15 @@ Détail dans `doc/adr/`.
               Simulateur Python 3 scénarios (nominal / hors-seuil / limite)
               Testé session 007 ✓
 
-[ ] Bloc 6  — Auth
-              NextAuth.js, login, middleware protège-routes, rôles
+[x] Bloc 6  — Auth
+              NextAuth v5 (app-siege) : login + register (VIEWER forcé) + logout
+              Vérif identifiants déléguée au backend (POST /api/auth/login, réutilise bcrypt)
+              proxy.ts app-siege : protège routes + redirections
+              Clé de service x-api-key (proxy.ts backend) : protège /api/* — OWASP
+              Helpers rôles (lib/auth-guards.ts) : ADMIN / MANAGER_PAYS / VIEWER
+              ↳ Testé session 012 — auth 2 couches, backend modifié au minimum (2 routes + 1 proxy)
+              Vérif email à l'inscription (session 013) : nodemailer + Mailhog,
+              token usage unique 24h, login refusé si non vérifié (GET /api/auth/verify)
 
 [ ] Bloc 7  — Frontend + Agrégateur siège  ← fusion anciens Blocs 7 & 8
               API agrégateur dans frontend/app/api/ (stocks, mesures, alertes)
