@@ -201,9 +201,10 @@ Détail dans `doc/adr/`.
               UI lots triés FIFO, courbes temp/humidité
               Statuts alertes, sélection pays/entrepôt
 
-[ ] Bloc 8  — Alerting Node-RED
+[x] Bloc 8  — Alerting Node-RED
               Flow MQTT → règles → email responsable
               Service Node-RED dans docker-compose
+              Tests E2E → Bloc 9
 
 [ ] Bloc 9  — Tests (consolidation)
               Couverture unitaire + intégration + API

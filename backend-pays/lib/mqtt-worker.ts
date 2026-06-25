@@ -1,5 +1,4 @@
 import mqtt from "mqtt"
-import { checkMeasurementAlerts } from "@/lib/alert-rules"
 import { prisma } from "@/lib/prisma"
 
 const BROKER_URL = process.env.MQTT_BROKER_URL ?? "mqtt://localhost:1883"
@@ -57,12 +56,7 @@ export function startMqttWorker(): void {
         },
       })
 
-      // Fire-and-forget identique à la route POST /api/measurements
-      checkMeasurementAlerts(
-        data.warehouseId,
-        data.temperature,
-        data.humidity
-      ).catch((err) => console.error("[mqtt] checkMeasurementAlerts failed:", err))
+      // Alerting délégué à Node-RED (ADR-0007)
     } catch (err) {
       console.error("[mqtt] Erreur insertion mesure:", err)
     }

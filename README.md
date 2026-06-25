@@ -37,7 +37,7 @@ cd backend-pays && npx prisma migrate dev
 backend-pays/   → Next.js API (port 3001) — API locale + ingestion MQTT
 app-siege/      → Next.js UI + agrégation siège (port 3000)
 shared/types/   → Interfaces TypeScript partagées
-iot/            → Firmware ESP32
+iot/            → Firmware ESP8266 + simulateur Python
 mosquitto/      → Configuration broker MQTT
 doc/            → ADRs, journal de session, glossaire
 ```
@@ -50,7 +50,7 @@ doc/            → ADRs, journal de session, glossaire
 |---|---|---|
 | PostgreSQL + TimescaleDB | `timescale/timescaledb:latest-pg16` | 5432 |
 | MQTT Broker | `eclipse-mosquitto:2` | 1883 / 9001 (WS) |
-| Mailhog (boîte mail de test) | `mailhog/mailhog` | 1025 (SMTP) / 8025 (web) |
+| Node-RED (alerting) | `nodered/node-red:latest` | 1880 |
 
 ```bash
 # Démarrer
@@ -96,56 +96,8 @@ Copier `.env.example` en `.env` dans chaque app concernée. Les valeurs par déf
 | `MQTT_BROKER_URL` | URL du broker Mosquitto |
 | `COUNTRY_CODE` | Pays déployé (`BR` / `EC` / `CO`) |
 | `BACKEND_*_URL` | URLs des backends pays (utilisées par `app-siege/`) |
-| `AUTH_SECRET` | Secret NextAuth v5 — signe les JWT de session (`app-siege/`) |
-| `AUTH_API_URL` | Backend pays qui vérifie les identifiants (`app-siege/`) |
-| `SERVICE_API_KEY` | Clé de service M2M `x-api-key` — **identique** dans les deux apps |
-| `SMTP_*` | Envoi des emails de vérification (`backend-pays/`) — Mailhog par défaut |
-| `APP_PUBLIC_URL` | URL d'app-siege, pour le lien de vérification dans l'email (`backend-pays/`) |
-
----
-
-## Authentification (Bloc 6)
-
-Auth à **2 couches** :
-1. **Utilisateur** — NextAuth v5 dans `app-siege` (login / register / logout), sessions JWT, rôles `ADMIN` / `MANAGER_PAYS` / `VIEWER`. La vérification des identifiants est déléguée au backend pays (`POST /api/auth/login`, bcrypt).
-2. **Service (M2M)** — toutes les routes `/api/*` du backend pays exigent l'en-tête `x-api-key` (`SERVICE_API_KEY`). Seul `app-siege` la détient → l'API pays n'est pas accessible directement (OWASP API Security).
-
-Routes ajoutées (backend) : `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/verify`.
-Pages (app-siege) : `/login`, `/register`, `/verify`. Le reste est protégé par `app-siege/proxy.ts`.
-
-### Vérification d'email à l'inscription
-
-À l'inscription, le compte est créé **non vérifié** : un email contenant un lien d'activation est envoyé, et la connexion est refusée (`403`) tant que l'email n'est pas confirmé.
-
-- **Par défaut (dev/démo)** : les emails sont capturés par **Mailhog** → les consulter sur **http://localhost:8025** (rien n'est envoyé sur Internet). Cliquer le lien dans le mail Mailhog active le compte.
-- **Envois réels (Gmail)** : renseigner dans `backend-pays/.env` :
-
-  ```bash
-  SMTP_HOST=smtp.gmail.com
-  SMTP_PORT=587
-  SMTP_USER=ton.adresse@gmail.com
-  SMTP_PASS=mot_de_passe_application   # myaccount.google.com/apppasswords (2FA requise)
-  SMTP_FROM=FutureKawa <ton.adresse@gmail.com>
-  ```
-
-  Aucun changement de code — uniquement ces variables. Le mail part alors vers la vraie adresse saisie.
-
-> Les comptes **seedés** (admin/managers/viewer) sont déjà marqués vérifiés.
-> Le même canal SMTP servira aux **emails d'alerte** (Bloc 8).
-
-### Comptes de test (seed)
-
-Mot de passe commun : `FutureKawa2026!`
-
-| Email | Rôle | Pays |
-|---|---|---|
-| `admin@futurekawa.com` | ADMIN | — (siège) |
-| `manager.br@futurekawa.com` | MANAGER_PAYS | BR |
-| `manager.ec@futurekawa.com` | MANAGER_PAYS | EC |
-| `manager.co@futurekawa.com` | MANAGER_PAYS | CO |
-| `viewer@futurekawa.com` | VIEWER | — |
-
-> L'inscription via `/register` crée toujours un compte **VIEWER** (rôle non choisissable côté client).
+| `BACKEND_PAYS_URL` | URL du backend pays appelée par Node-RED (défaut : `http://host.docker.internal:3001`) |
+| `NEXTAUTH_SECRET` | Secret de session NextAuth.js (à changer en prod) |
 
 ---
 
