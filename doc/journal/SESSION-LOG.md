@@ -455,50 +455,93 @@
 
 **Mode de test actif : AUTO**
 
-**En discussion (pas encore décidé) — Vérification email + 2FA :**
-- Grégoire veut pouvoir créer un compte avec son vrai mail et recevoir un mail de vérification.
-- À trancher : vérif email seule ou + 2FA ? fournisseur d'envoi (Resend / Gmail SMTP / Mailhog) ? OK pour migration Prisma additive (colonne `emailVerified` + table `verification_tokens`) ?
-- À mutualiser avec le canal email des alertes (Bloc 8 Node-RED).
-
-**Sinon → Bloc 7 — Frontend + Agrégateur siège (cœur de la partie de Grégoire) :**
-- Routes agrégateur dans `app-siege/app/api/` (interrogent backend pays avec `x-api-key`) : stocks, mesures, alertes
-- UI : sélection pays/entrepôt, lots triés FIFO, courbes temp/humidité (Chart.js), statuts + alertes
-- Réutiliser `lib/auth-guards.ts` pour VIEWER (lecture seule) vs MANAGER_PAYS/ADMIN
-
-**Rappel démarrage stack :** `docker compose up -d` puis `npm run dev` dans backend-pays (PORT 3001) et app-siege (PORT 3000). Comptes : voir README (`FutureKawa2026!`).
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt en DB)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN (tout) / MANAGER_PAYS (son pays uniquement) / VIEWER (lecture seule)
 
 ---
 
 ## Session 013 — 2026-06-24
 
 ### Ce qui a été fait
-- **Vérification d'email à l'inscription** (extension du Bloc 6, à la demande de Grégoire).
-- DB : migration additive `20260623152912_email_verification` (`users.emailVerified` + table `verification_tokens`). Backfill : 7 comptes existants marqués vérifiés (admin/managers se connectent toujours).
-- Email : service `lib/email.ts` (nodemailer, SMTP universel). **Mailhog** ajouté à `docker-compose.yml` (SMTP 1025 / web 8025) comme boîte de test — bascule Gmail SMTP en 4 variables, sans changement de code.
-- Backend : `register` crée le compte non vérifié + génère un token (24h) + envoie le mail ; nouvelle route `GET /api/auth/verify` (token usage unique) ; `login` refuse (403 `email_not_verified`) tant que non vérifié.
-- app-siege : `register` affiche un écran « vérifie tes mails » (plus d'auto-login) ; page `/verify` (consomme le token via le backend + clé de service) ; `login` affiche un message dédié si email non vérifié ; erreur NextAuth `EmailNotVerified` (code remonté dans l'URL). `/verify` ajouté aux routes publiques de `proxy.ts`.
-- Tests : flux complet validé via Mailhog (inscription → mail → /verify → login débloqué), token usage unique, non-régression admin. Lint OK (2 apps).
+- Bloc 8 — Alerting Node-RED : étapes 1 et 2 implémentées
+- `POST /api/alerts` ajouté dans `backend-pays/app/api/alerts/route.ts`
+  → validation des champs requis (lotId, type, message)
+  → vérification que le type est un AlertType connu
+  → vérification que le lot existe en base
+  → création alerte + mise à jour statut lot dans une transaction atomique
+  → protection : si lot déjà PERIME, son statut n'est pas écrasé
+- Service `node-red` ajouté dans `docker-compose.yml`
+  → image `nodered/node-red:latest`, port 1880
+  → volume `./backend-pays/node-red:/data` pour versionner les flows
+  → `extra_hosts: host.docker.internal:host-gateway` (cross-plateforme Windows + Linux)
+  → variable `BACKEND_PAYS_URL` pour appeler le backend depuis le conteneur
+- Dossier `backend-pays/node-red/` créé (`.gitkeep` — flows à venir étape 3)
+- `.env.example` mis à jour : `BACKEND_PAYS_URL` documentée
+- `README.md` mis à jour : Node-RED dans le tableau des services, variable BACKEND_PAYS_URL, ESP32 → ESP8266/simulateur
+- Branche `feat(alerting)` créée depuis `develop` — commits poussés sur cette branche
 
 ### Fichiers créés / modifiés
-- **backend-pays** : `prisma/schema.prisma` (+ emailVerified + VerificationToken), `prisma/migrations/20260623152912_email_verification/`, `lib/email.ts` (new), `app/api/auth/register/route.ts` (mail + token), `app/api/auth/verify/route.ts` (new), `app/api/auth/login/route.ts` (refus si non vérifié), `.env` (SMTP_*), `package.json` (nodemailer)
-- **app-siege** : `auth.ts` (EmailNotVerified + 403), `app/register/page.tsx` (écran confirmation), `app/verify/page.tsx` (new), `app/login/page.tsx` (messages dédiés), `proxy.ts` (/verify public)
-- **racine** : `docker-compose.yml` (Mailhog), `CLAUDE.md`, `README.md`, `.env.example`, `doc/glossaire.md`, `doc/journal/SESSION-LOG.md`
+- `backend-pays/app/api/alerts/route.ts` (POST ajouté)
+- `docker-compose.yml` (service node-red ajouté)
+- `backend-pays/node-red/.gitkeep` (nouveau)
+- `.env.example` (BACKEND_PAYS_URL ajoutée)
+- `README.md` (Node-RED + BACKEND_PAYS_URL + ESP8266)
+- `doc/journal/SESSION-LOG.md`
 
 ### Décisions clés actées
-- Vérification email **par lien à usage unique** (token 24h), pas par code OTP — UX standard, simple.
-- **Mailhog par défaut** (zéro config, démontrable sans spammer) ; Gmail SMTP = simple bascule de variables. Canal mutualisable avec les alertes (Bloc 8).
-- Le « 403 non vérifié » n'est renvoyé qu'**après** validation du mot de passe (anti-énumération).
-- Migration Prisma **additive** acceptée (1 colonne + 1 table) — cohérent avec la règle « modif backend minimale ».
-- **Vrai 2FA à chaque login** (TOTP/OTP) = NON fait, séparable, à voir plus tard si besoin.
+- Node-RED appelle `POST /api/alerts` (pas d'accès direct DB) — conforme ADR-0007
+- `extra_hosts: host.docker.internal:host-gateway` = solution cross-plateforme Docker officielle
+- Branche `feat(alerting)` isolée de `develop` — PR en fin de bloc
 
 ### Prochain démarrage
-**Vérification email — TERMINÉE ✓** (testée bout en bout via Mailhog)
+**Bloc 8 — Étapes 1 et 2 terminées ✓**
 
 **Mode de test actif : AUTO**
 
-**Pour recevoir sur un VRAI mail** : remplir `SMTP_*` Gmail dans `backend-pays/.env` (voir README § Vérification d'email).
+**Étape 3/5 — Créer le flow Node-RED (`backend-pays/node-red/flows.json`)**
+- Flow 1 : MQTT in (`futurekawa/mesure`) → vérification seuils par pays → POST /api/alerts → email
+- Flow 2 : cron péremption → interroger GET /api/lots → POST /api/alerts si lot > 365 jours
 
-**Priorité suivante recommandée → Bloc 7 — Frontend + Agrégateur siège** (cœur de la partie de Grégoire) :
-- Routes agrégateur dans `app-siege/app/api/` (interrogent le backend pays avec `x-api-key`) : stocks, mesures, alertes
-- UI : sélection pays/entrepôt, lots triés FIFO, courbes temp/humidité (Chart.js), statuts + alertes
-- Réutiliser `lib/auth-guards.ts` (VIEWER lecture seule vs MANAGER_PAYS/ADMIN)
+---
+
+## Session 014 — 2026-06-25
+
+### Ce qui a été fait
+- Bloc 8 — Alerting Node-RED : étape 3 implémentée
+- `backend-pays/lib/mqtt-worker.ts` : suppression de l'appel à `checkMeasurementAlerts`
+  → Le backend ne crée plus d'alertes lui-même — Node-RED est le seul responsable (ADR-0007)
+- `backend-pays/instrumentation.ts` : suppression de l'appel à `checkAllLotExpirations`
+  → La vérification de péremption au démarrage est remplacée par le cron quotidien Node-RED
+- `backend-pays/node-red/package.json` : créé pour installer `node-red-node-email` automatiquement
+- `backend-pays/node-red/flows.json` : créé avec deux flows complets
+  → Flow 1 : MQTT mesure → vérification seuils → GET lots actifs → POST /api/alerts × lot → email
+  → Flow 2 : cron quotidien → GET tous lots → filtrer > 365 jours → POST /api/alerts → email
+- `.env.example` : variables SMTP ajoutées (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_EMAIL_TO`)
+- Test E2E reporté au Bloc 9 (décision : pas de données en base pour un test manuel)
+- Node-RED vérifié visuellement : flows chargés et visibles sur `http://localhost:1880`
+
+### Fichiers créés / modifiés
+- `backend-pays/lib/mqtt-worker.ts` (suppression checkMeasurementAlerts)
+- `backend-pays/instrumentation.ts` (suppression checkAllLotExpirations)
+- `backend-pays/node-red/package.json` (nouveau)
+- `backend-pays/node-red/flows.json` (nouveau)
+- `.env.example` (variables SMTP)
+
+### Décisions clés actées
+- Suppression de la logique d'alerte du backend → zéro doublon possible
+- Test E2E = Bloc 9 (base de test dédiée, nettoyage automatique après chaque test)
+- SMTP credentials configurés via l'UI Node-RED (`http://localhost:1880`) — jamais en clair dans le code
+
+### Prochain démarrage
+**Bloc 8 — TERMINÉ ✓ (tests E2E au Bloc 9)**
+
+**Mode de test actif : AUTO**
+
+**Bloc 6 — Auth (NextAuth.js)**
+- Installer NextAuth.js v5 dans `backend-pays/` et `app-siege/`
+- Provider Credentials (email + password hashé bcrypt)
+- Middleware protège toutes les routes `/api/*`
+- Rôles : ADMIN / MANAGER_PAYS / VIEWER

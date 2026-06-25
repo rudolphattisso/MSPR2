@@ -221,6 +221,9 @@ Fichier `route.ts` dans `app/api/` qui définit un endpoint REST (GET, POST, PUT
 
 ## S
 
+**SMTP (Simple Mail Transfer Protocol)**
+Protocole standard d'envoi d'emails. Un serveur SMTP (ex: `smtp.gmail.com`) prend en charge l'acheminement du message de l'expéditeur vers le destinataire. Dans ce projet : Node-RED utilise le module `node-red-node-email` pour envoyer les alertes via SMTP. Les identifiants (login/mot de passe) sont configurés dans l'interface Node-RED et stockés dans `credentials.json` — jamais dans le code source.
+
 **Singleton (pattern)**
 Pattern de conception garantissant qu'une classe n'a qu'une seule instance dans toute l'application. Dans ce projet : `lib/prisma.ts` exporte un `PrismaClient` unique. Sans ce pattern, chaque hot-reload en développement créerait une nouvelle instance et épuiserait le pool de connexions PostgreSQL. Implémenté via une variable globale (`globalThis`) qui survit aux rechargements de modules.
 
@@ -242,6 +245,12 @@ Objet contenant les informations de l'utilisateur connecté (id, email, rôle, p
 ---
 
 ## T
+
+**Test d'intégration**
+Test qui vérifie que plusieurs composants fonctionnent correctement ensemble (ex : MQTT + Node-RED + backend + base de données). Contrairement au test unitaire qui isole une fonction, le test d'intégration teste le flux bout en bout sur une infrastructure réelle (Docker, réseau, DB). Dans ce projet : prévu au Bloc 9 pour valider le flow Node-RED complet.
+
+**Test E2E (End-to-End)**
+Test qui simule un scénario utilisateur complet depuis le début jusqu'à la fin, en passant par tous les composants réels. Exemple : publier un message MQTT hors seuil → attendre → vérifier qu'une alerte existe en base → nettoyer. Avantage : aucune donnée ne reste en base après le test (nettoyage automatique). Prévu au Bloc 9 sur une base de test dédiée.
 
 **TimescaleDB**
 Extension open-source de PostgreSQL optimisée pour les données temporelles (timeseries). Ajoute les hypertables, la compression automatique et les agrégats continus. Même SQL, même driver, même image Docker que PostgreSQL.
