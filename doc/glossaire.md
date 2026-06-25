@@ -267,3 +267,46 @@ Dans ce projet, les UUIDs sont générés par PostgreSQL (`gen_random_uuid()`) e
 
 **Worker MQTT (backend pays)**
 Processus dans le backend Next.js qui se connecte au broker Mosquitto, s'abonne aux topics de mesures, et insère les données reçues dans TimescaleDB.
+
+---
+
+## Authentification (Bloc 6)
+
+**NextAuth v5 (Auth.js)**
+Bibliothèque d'authentification native Next.js App Router. Gère login/logout, sessions, callbacks. Installée dans `app-siege` (`next-auth@beta`). Config centrale dans `auth.ts`, exposée au réseau par le route handler `app/api/auth/[...nextauth]/route.ts`.
+
+**Credentials Provider**
+Mode d'auth NextAuth par email + mot de passe (vs OAuth Google/GitHub). Sa fonction `authorize()` valide les identifiants — ici en appelant le backend pays (`POST /api/auth/login`), jamais la DB directement.
+
+**Session JWT**
+Stratégie où la session est un jeton signé (JWT) stocké en cookie (`authjs.session-token`), pas en base. Le callback `jwt` y place `role` + `countryId` ; le callback `session` les réexpose à l'app. Évite une requête DB à chaque page.
+
+**RBAC (Role-Based Access Control)**
+Contrôle d'accès par rôle. Trois rôles : `ADMIN` (tout), `MANAGER_PAYS` (son pays), `VIEWER` (lecture seule). Appliqué via les helpers `lib/auth-guards.ts`.
+
+**Middleware / proxy.ts**
+Code exécuté avant chaque requête pour protéger les routes. En Next.js 16 le fichier `middleware.ts` est renommé `proxy.ts`. Côté app-siege : redirige vers `/login` si non connecté. Côté backend pays : exige la clé de service.
+
+**Clé de service (M2M, x-api-key)**
+Secret partagé entre app-siege et le backend pays (`SERVICE_API_KEY`), envoyé dans l'en-tête HTTP `x-api-key`. Le `proxy.ts` du backend rejette (401) tout appel `/api/*` sans la bonne clé. Authentification machine-à-machine (M2M) — empêche l'accès direct à l'API pays (OWASP API Security).
+
+**Server Action**
+Fonction serveur (`"use server"`) appelée directement depuis un formulaire React, sans écrire de route API. Utilisée pour le login, le register et le logout dans `app-siege`.
+
+**bcrypt**
+Algorithme de hachage de mots de passe (lent par conception, résistant au brute-force). `bcrypt.hash()` au register, `bcrypt.compare()` au login. Les mots de passe ne sont jamais stockés en clair ni renvoyés par l'API.
+
+**Vérification d'email**
+Confirmation que l'adresse appartient bien à l'utilisateur. À l'inscription, le compte est créé non vérifié (`emailVerified` = null) ; un lien à usage unique (token, 24 h) est envoyé par mail ; le clic active le compte. La connexion est refusée (403) tant que l'email n'est pas vérifié.
+
+**nodemailer**
+Bibliothèque Node.js d'envoi d'emails via SMTP. Configurée par variables d'env (`SMTP_HOST/PORT/USER/PASS/FROM`) → un seul code pour Mailhog (dev) ou Gmail/Resend (prod).
+
+**Mailhog**
+Faux serveur SMTP de développement : capture tous les emails sans rien envoyer sur Internet, et les affiche dans une interface web (http://localhost:8025). Permet de tester les envois sans vrai compte mail. Conteneur Docker.
+
+**SMTP (Simple Mail Transfer Protocol)**
+Protocole standard d'envoi d'emails. Port 1025 pour Mailhog (sans TLS), 587 pour Gmail (STARTTLS).
+
+**Quoted-printable**
+Encodage du corps des emails où les caractères spéciaux deviennent `=XX` (ex. `=` → `=3D`). À décoder avant d'extraire un contenu (ex. le token d'un lien) d'un email brut.
