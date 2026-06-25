@@ -423,27 +423,35 @@
 
 ## Session 012 — 2026-06-23
 
+### Contexte
+- Grégoire reprend la main sur le projet et prend en charge la **partie front** (Bloc 7) + l'auth (Bloc 6).
+- Consigne forte : **réutiliser le backend existant (Blocs 1-5) sans le casser, le modifier au strict minimum.**
+
 ### Ce qui a été fait
-- Flash ESP8266 confirmé KO sur Windows 10 également (KO W10 + W11) → décision définitive : simulateur Python = fallback IoT officiel
-- Simulation IoT testée et validée end-to-end en Mode AUTO :
-  - Scénario nominal Brésil : 3 messages MQTT → 3 mesures en base ✅
-  - Scénario hors-seuil Brésil : 3 messages → 12 alertes (2 types × 2 lots actifs × 3 messages) ✅
-  - Chaîne complète MQTT → TimescaleDB → alertes confirmée fonctionnelle
-- `CLAUDE.md` mis à jour : section "Onboarding équipe" ajoutée
-- `.claude/commands/onboarding.md` créé : tutoriel interactif 5 étapes pour nouveaux membres
+- **Remise en route complète de la stack** (poste de Grégoire) : `docker compose up -d` (db + mqtt), `npm install` (backend-pays + app-siege), `prisma generate` + `migrate deploy` + `db seed`, lancement des 2 serveurs.
+- **Test end-to-end IoT validé sans matériel** via `iot/simulation/simulate_sensor.py` (paho-mqtt installé) : MQTT → worker → TimescaleDB → alertes.
+- **Bloc 6 — Auth complète, version 2 couches** (auth utilisateur + auth service M2M) :
+  - Étape 1 — backend : `POST /api/auth/login` (additif, réutilise Prisma + bcryptjs + table users). Message 401 générique anti-énumération (OWASP).
+  - Étape 2 — app-siege : NextAuth v5 (`next-auth@beta` 5.0.0-beta.31), provider Credentials → fetch backend, JWT `{role, countryId}`, route handler `[...nextauth]`, types augmentés.
+  - Étape 3 — app-siege : pages `/login` + accueil authentifié + logout (Server Actions). Titre d'onglet corrigé.
+  - Étape 3b — register : `POST /api/auth/register` (backend, additif) + page `/register`. **Rôle forcé VIEWER côté serveur** (anti-élévation), choix du pays, auto-login.
+  - Étape 4 — app-siege : `proxy.ts` (ex-middleware, nom Next 16) protège tout sauf `/login`, `/register`, `/api/auth/*` ; helpers `lib/auth-guards.ts` (requireAuth / requireRole / requireWriteAccess).
+  - Étape 5 — backend : `proxy.ts` exige `x-api-key` (`SERVICE_API_KEY`) sur `/api/*`. app-siege envoie la clé. **Non-régression IoT vérifiée** (MQTT passe par Prisma, pas par HTTP).
+  - Étape 6 — docs (cette entrée) : CLAUDE.md roadmap, README, .env.example, glossaire.
 
 ### Fichiers créés / modifiés
-- `CLAUDE.md` (section Onboarding équipe)
-- `.claude/commands/onboarding.md` (nouveau)
-- `doc/journal/SESSION-LOG.md`
-- `doc/doc_prepa/futurekawa_notes.md` (décision flash + commande démo simulateur)
+- **backend-pays** : `app/api/auth/login/route.ts` (new), `app/api/auth/register/route.ts` (new), `proxy.ts` (new), `.env` (SERVICE_API_KEY)
+- **app-siege** : `auth.ts` (new), `app/api/auth/[...nextauth]/route.ts` (new), `types/next-auth.d.ts` (new), `app/login/page.tsx` (new), `app/register/page.tsx` (new), `app/page.tsx` (réécrit), `app/layout.tsx` (titre), `proxy.ts` (new), `lib/auth-guards.ts` (new), `.env` (AUTH_*, SERVICE_API_KEY), `package.json` (next-auth)
+- **racine** : `CLAUDE.md`, `README.md`, `.env.example`, `doc/glossaire.md`, `doc/journal/SESSION-LOG.md`
 
 ### Décisions clés actées
-- Flash ESP8266 abandonné définitivement — simulateur Python = mode IoT officiel démo jury
-- Onboarding via `/onboarding` : chaque nouveau membre passe par ce tutoriel avant de coder
+- **Auth = ajout volontaire** : pas un livrable explicite du CDC, mais justifié par « exigences croissantes sur la sécurité » + OWASP API Security Top 10 (seule ressource sécu fournie). Argument soutenance.
+- **Architecture 2 couches** : auth utilisateur (NextAuth, app-siege) + auth service (x-api-key entre app-siege et backend pays). app-siege reste un pur consommateur d'API, aucun accès DB direct (cohérent ADR-0002/0004).
+- **Backend modifié au strict minimum** : seulement 2 routes additives + 1 proxy. Aucune route/logique existante touchée.
+- **Register public mais sécurisé** : rôle toujours forcé VIEWER côté serveur (impossible de s'auto-promouvoir ADMIN).
 
 ### Prochain démarrage
-**Bloc 5 — SIMULATEUR VALIDÉ ✓**
+**Bloc 6 — TERMINÉ ✓** (testé bout en bout)
 
 **Mode de test actif : AUTO**
 
