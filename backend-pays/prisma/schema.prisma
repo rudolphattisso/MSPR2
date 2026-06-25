@@ -102,14 +102,27 @@ model Alert {
 }
 
 model User {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String   @unique
-  password  String
-  name      String
-  role      UserRole @default(VIEWER)
-  countryId String?
-  country   Country? @relation(fields: [countryId], references: [id])
-  createdAt DateTime @default(now())
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique
+  password      String
+  name          String
+  role          UserRole  @default(VIEWER)
+  countryId     String?
+  country       Country?  @relation(fields: [countryId], references: [id])
+  createdAt     DateTime  @default(now())
+  // null = email non vérifié ; date = vérifié le ...
+  emailVerified DateTime?
 
   @@map("users")
+}
+
+// Jetons de vérification d'email à usage unique (TTL ~24h).
+model VerificationToken {
+  token     String   @id
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("verification_tokens")
 }
