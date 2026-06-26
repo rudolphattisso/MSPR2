@@ -1,0 +1,139 @@
+{
+  "common": {
+    "appName": "FutureKawa",
+    "loading": "Loading…",
+    "tagline": "Coffee stock monitoring"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "lots": "Lots",
+    "alerts": "Alerts"
+  },
+  "dashboard": {
+    "subtitle": "Overview of your stock",
+    "lotsDesc": "View lots and their status",
+    "alertsDesc": "Track active alerts",
+    "comingSoon": "Coming soon",
+    "kpiLots": "Lots in stock",
+    "kpiActiveAlerts": "Active alerts",
+    "kpiPerime": "Expired lots",
+    "kpiCountries": "Monitored countries",
+    "thisMonth": "this month",
+    "recentAlerts": "Latest alerts",
+    "viewAllAlerts": "View all alerts",
+    "distribution": "Distribution by country",
+    "total": "Total"
+  },
+  "theme": {
+    "light": "Light mode",
+    "dark": "Dark mode",
+    "toggle": "Toggle theme"
+  },
+  "lang": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English",
+    "es": "Español",
+    "pt-BR": "Português (Brasil)"
+  },
+  "user": {
+    "logout": "Sign out",
+    "role": {
+      "ADMIN": "Administrator (HQ)",
+      "MANAGER_PAYS": "Country manager",
+      "VIEWER": "Viewer"
+    }
+  },
+  "home": {
+    "connected": "You are signed in.",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "country": "Country",
+    "allCountries": "All (HQ)"
+  },
+  "lots": {
+    "subtitle": "Sorted by storage date (FIFO — oldest first)",
+    "filterCountry": "Country",
+    "filterWarehouse": "Warehouse",
+    "allCountries": "All countries",
+    "allWarehouses": "All warehouses",
+    "colReference": "Reference",
+    "colWarehouse": "Warehouse",
+    "colStoredAt": "Storage date",
+    "colStatus": "Status",
+    "empty": "No lots for this filter.",
+    "count": "{count, plural, =0 {No lots} one {# lot} other {# lots}}"
+  },
+  "countries": {
+    "BR": "Brazil",
+    "EC": "Ecuador",
+    "CO": "Colombia"
+  },
+  "lotDetail": {
+    "back": "Back to lots",
+    "storedAt": "Storage date",
+    "warehouse": "Warehouse",
+    "country": "Country",
+    "status": "Status",
+    "temperature": "Temperature (°C)",
+    "humidity": "Humidity (%)",
+    "measured": "Measured",
+    "idealZone": "Ideal zone",
+    "noMeasurements": "No measurements recorded for this lot.",
+    "alertsTitle": "Lot alerts",
+    "noAlerts": "No alerts.",
+    "notFound": "Lot not found or access denied."
+  },
+  "alertType": {
+    "SEUIL_TEMPERATURE": "Temperature threshold",
+    "SEUIL_HUMIDITE": "Humidity threshold",
+    "PEREMPTION": "Expiry"
+  },
+  "alertsList": {
+    "subtitle": "Quality and expiry alerts",
+    "colType": "Type",
+    "colLot": "Lot",
+    "colMessage": "Message",
+    "colDate": "Date",
+    "colStatus": "State",
+    "resolved": "Resolved",
+    "active": "Active",
+    "empty": "No alerts.",
+    "count": "{count, plural, =0 {No alerts} one {# alert} other {# alerts}}"
+  },
+  "auth": {
+    "subtitleLogin": "Stock monitoring — sign in",
+    "subtitleRegister": "Create an account",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "country": "Country",
+    "countryNone": "None (HQ)",
+    "passwordHint": "8 characters minimum.",
+    "signIn": "Sign in",
+    "createAccount": "Create my account",
+    "noAccount": "No account yet?",
+    "createAccountLink": "Create an account",
+    "haveAccount": "Already have an account?",
+    "invalid": "Invalid credentials.",
+    "unverified": "Email not verified. Check your inbox and click the activation link.",
+    "verifiedOk": "Email verified ✓ You can sign in.",
+    "registerExists": "This email is already in use.",
+    "registerInvalid": "Invalid fields (password: 8 characters minimum).",
+    "registerServer": "Server error, please try again.",
+    "sentBadge": "Account created ✓",
+    "sentMessage": "A verification email has just been sent. Click the link it contains to activate your account, then sign in.",
+    "goToLogin": "Go to sign in",
+    "verifiedBadge": "Email verified ✓",
+    "verifiedMessage": "Your account is active. You can now sign in.",
+    "verifyErrorBadge": "Invalid or expired verification link.",
+    "verifyErrorMessage": "The link may have already been used or has expired (24 h).",
+    "countries": { "BR": "Brazil", "EC": "Ecuador", "CO": "Colombia" }
+  },
+  "status": {
+    "CONFORME": "Compliant",
+    "EN_ALERTE": "Alert",
+    "PERIME": "Expired"
+  }
+}

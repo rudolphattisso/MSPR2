@@ -1,0 +1,139 @@
+{
+  "common": {
+    "appName": "FutureKawa",
+    "loading": "Carregando…",
+    "tagline": "Monitoramento de estoque de café"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "lots": "Lotes",
+    "alerts": "Alertas"
+  },
+  "dashboard": {
+    "subtitle": "Visão geral do seu estoque",
+    "lotsDesc": "Consultar os lotes e seu status",
+    "alertsDesc": "Acompanhar os alertas ativos",
+    "comingSoon": "Em breve",
+    "kpiLots": "Lotes em estoque",
+    "kpiActiveAlerts": "Alertas ativos",
+    "kpiPerime": "Lotes vencidos",
+    "kpiCountries": "Países monitorados",
+    "thisMonth": "este mês",
+    "recentAlerts": "Últimos alertas",
+    "viewAllAlerts": "Ver todos os alertas",
+    "distribution": "Distribuição por país",
+    "total": "Total"
+  },
+  "theme": {
+    "light": "Modo claro",
+    "dark": "Modo escuro",
+    "toggle": "Alternar tema"
+  },
+  "lang": {
+    "label": "Idioma",
+    "fr": "Français",
+    "en": "English",
+    "es": "Español",
+    "pt-BR": "Português (Brasil)"
+  },
+  "user": {
+    "logout": "Sair",
+    "role": {
+      "ADMIN": "Administrador (sede)",
+      "MANAGER_PAYS": "Gerente de país",
+      "VIEWER": "Observador"
+    }
+  },
+  "home": {
+    "connected": "Você está conectado.",
+    "name": "Nome",
+    "email": "E-mail",
+    "role": "Função",
+    "country": "País",
+    "allCountries": "Todos (sede)"
+  },
+  "lots": {
+    "subtitle": "Ordenados por data de armazenamento (FIFO — os mais antigos primeiro)",
+    "filterCountry": "País",
+    "filterWarehouse": "Armazém",
+    "allCountries": "Todos os países",
+    "allWarehouses": "Todos os armazéns",
+    "colReference": "Referência",
+    "colWarehouse": "Armazém",
+    "colStoredAt": "Data de armazenamento",
+    "colStatus": "Status",
+    "empty": "Nenhum lote para este filtro.",
+    "count": "{count, plural, =0 {Nenhum lote} one {# lote} other {# lotes}}"
+  },
+  "countries": {
+    "BR": "Brasil",
+    "EC": "Equador",
+    "CO": "Colômbia"
+  },
+  "lotDetail": {
+    "back": "Voltar aos lotes",
+    "storedAt": "Data de armazenamento",
+    "warehouse": "Armazém",
+    "country": "País",
+    "status": "Status",
+    "temperature": "Temperatura (°C)",
+    "humidity": "Umidade (%)",
+    "measured": "Medido",
+    "idealZone": "Zona ideal",
+    "noMeasurements": "Nenhuma medição registrada para este lote.",
+    "alertsTitle": "Alertas do lote",
+    "noAlerts": "Sem alertas.",
+    "notFound": "Lote não encontrado ou acesso negado."
+  },
+  "alertType": {
+    "SEUIL_TEMPERATURE": "Limite de temperatura",
+    "SEUIL_HUMIDITE": "Limite de umidade",
+    "PEREMPTION": "Vencimento"
+  },
+  "alertsList": {
+    "subtitle": "Alertas de qualidade e vencimento",
+    "colType": "Tipo",
+    "colLot": "Lote",
+    "colMessage": "Mensagem",
+    "colDate": "Data",
+    "colStatus": "Estado",
+    "resolved": "Resolvida",
+    "active": "Ativa",
+    "empty": "Nenhum alerta.",
+    "count": "{count, plural, =0 {Nenhum alerta} one {# alerta} other {# alertas}}"
+  },
+  "auth": {
+    "subtitleLogin": "Monitoramento de estoque — entrar",
+    "subtitleRegister": "Criar uma conta",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome",
+    "country": "País",
+    "countryNone": "Nenhum (sede)",
+    "passwordHint": "8 caracteres no mínimo.",
+    "signIn": "Entrar",
+    "createAccount": "Criar minha conta",
+    "noAccount": "Ainda não tem conta?",
+    "createAccountLink": "Criar uma conta",
+    "haveAccount": "Já tem conta?",
+    "invalid": "Credenciais inválidas.",
+    "unverified": "E-mail não verificado. Verifique sua caixa de entrada e clique no link de ativação.",
+    "verifiedOk": "E-mail verificado ✓ Você já pode entrar.",
+    "registerExists": "Este e-mail já está em uso.",
+    "registerInvalid": "Campos inválidos (senha: 8 caracteres no mínimo).",
+    "registerServer": "Erro no servidor, tente novamente.",
+    "sentBadge": "Conta criada ✓",
+    "sentMessage": "Um e-mail de verificação acaba de ser enviado. Clique no link para ativar sua conta e depois entre.",
+    "goToLogin": "Ir para o login",
+    "verifiedBadge": "E-mail verificado ✓",
+    "verifiedMessage": "Sua conta está ativada. Agora você pode entrar.",
+    "verifyErrorBadge": "Link de verificação inválido ou expirado.",
+    "verifyErrorMessage": "O link pode já ter sido usado ou expirado (24 h).",
+    "countries": { "BR": "Brasil", "EC": "Equador", "CO": "Colômbia" }
+  },
+  "status": {
+    "CONFORME": "Conforme",
+    "EN_ALERTE": "Em alerta",
+    "PERIME": "Vencido"
+  }
+}
