@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
+import { PasswordInput } from "@/components/ui/password-input"
 
 const AUTH_API_URL = process.env.AUTH_API_URL ?? "http://localhost:3001"
 const SERVICE_API_KEY = process.env.SERVICE_API_KEY ?? ""
@@ -119,21 +120,16 @@ export default async function RegisterPage({
           />
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium">
-            {t("auth.password")}
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-amber-600 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-amber-500"
-          />
-          <p className="text-xs text-stone-400">{t("auth.passwordHint")}</p>
-        </div>
+        <PasswordInput
+          id="password"
+          name="password"
+          label={t("auth.password")}
+          showLabel={t("auth.showPassword")}
+          hideLabel={t("auth.hidePassword")}
+          autoComplete="new-password"
+          minLength={8}
+          hint={t("auth.passwordHint")}
+        />
 
         <div className="space-y-2">
           <label htmlFor="countryId" className="block text-sm font-medium">
