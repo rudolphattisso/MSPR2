@@ -107,6 +107,8 @@
     "subtitleRegister": "Crear una cuenta",
     "email": "Correo",
     "password": "Contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "name": "Nombre",
     "country": "País",
     "countryNone": "Ninguno (sede)",
