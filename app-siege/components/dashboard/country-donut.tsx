@@ -24,8 +24,8 @@ export function CountryDonut({
   const total = data.reduce((s, d) => s + d.count, 0)
 
   return (
-    <div className="flex items-center gap-6">
-      <div className="relative h-44 w-44 shrink-0">
+    <div className="flex w-full flex-col items-center justify-center gap-8 lg:flex-row lg:gap-12">
+      <div className="relative h-72 w-72 shrink-0 sm:h-96 sm:w-96 lg:h-[28rem] lg:w-[28rem]">
         <Doughnut
           data={{
             labels: data.map((d) => d.label),
@@ -45,14 +45,14 @@ export function CountryDonut({
           }}
         />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold">{total}</span>
-          <span className="text-xs text-stone-500 dark:text-stone-400">
+          <span className="text-4xl font-bold">{total}</span>
+          <span className="text-sm text-stone-500 dark:text-stone-400">
             {totalLabel}
           </span>
         </div>
       </div>
 
-      <ul className="space-y-2 text-sm">
+      <ul className="space-y-3 text-base">
         {data.map((d) => (
           <li key={d.country} className="flex items-center gap-2">
             <span

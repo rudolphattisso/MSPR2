@@ -9,6 +9,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Couleur secondaire « café » — complément du brun ambré primaire.
+   Génère les utilitaires bg-coffee-*, text-coffee-*, border-coffee-*, etc. */
+@theme {
+  --color-coffee-50: #f7f3ef;
+  --color-coffee-100: #ece1d6;
+  --color-coffee-200: #d8c3ac;
+  --color-coffee-300: #c0a07e;
+  --color-coffee-400: #a07d57;
+  --color-coffee-500: #6f4e37;
+  --color-coffee-600: #5b3f2c;
+  --color-coffee-700: #4b3621;
+  --color-coffee-800: #3a2a1a;
+  --color-coffee-900: #2a1e13;
+}
+
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
