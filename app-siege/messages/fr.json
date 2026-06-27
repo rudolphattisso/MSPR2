@@ -7,7 +7,9 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "lots": "Lots",
-    "alerts": "Alertes"
+    "alerts": "Alertes",
+    "collapse": "Réduire",
+    "expand": "Agrandir"
   },
   "dashboard": {
     "subtitle": "Vue d'ensemble de vos stocks",
@@ -38,11 +40,16 @@
   },
   "user": {
     "logout": "Se déconnecter",
+    "settings": "Réglages",
     "role": {
       "ADMIN": "Administrateur (siège)",
       "MANAGER_PAYS": "Manager pays",
       "VIEWER": "Observateur"
     }
+  },
+  "account": {
+    "title": "Mon compte",
+    "subtitle": "Informations de votre profil"
   },
   "home": {
     "connected": "Vous êtes connecté.",
