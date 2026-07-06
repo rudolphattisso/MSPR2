@@ -13,7 +13,8 @@ const NAV = [
 
 // Barre latérale (bleu nuit). Lien actif surligné en accent café.
 // Repliable via le bouton en bas (mode icônes seules).
-export function Sidebar() {
+// `alertsCount` = nombre d'alertes actives (badge sur « Alertes »).
+export function Sidebar({ alertsCount = 0 }: { alertsCount?: number }) {
   const pathname = usePathname()
   const t = useTranslations("nav")
   const [collapsed, setCollapsed] = useState(false)
@@ -43,12 +44,13 @@ export function Sidebar() {
             item.href === "/"
               ? pathname === "/"
               : pathname.startsWith(item.href)
+          const showBadge = item.key === "alerts" && alertsCount > 0
           return (
             <Link
               key={item.href}
               href={item.href}
               title={collapsed ? t(item.key) : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 collapsed ? "justify-center" : ""
               } ${
                 active
@@ -57,7 +59,19 @@ export function Sidebar() {
               }`}
             >
               <span className="w-4 text-center">{item.icon}</span>
-              {!collapsed && t(item.key)}
+              {!collapsed && <span>{t(item.key)}</span>}
+              {showBadge && !collapsed && (
+                <span
+                  className={`ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-xs font-semibold ${
+                    active ? "bg-white/25 text-white" : "bg-amber-600 text-white"
+                  }`}
+                >
+                  {alertsCount}
+                </span>
+              )}
+              {showBadge && collapsed && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-amber-600 ring-2 ring-white dark:ring-slate-900" />
+              )}
             </Link>
           )
         })}

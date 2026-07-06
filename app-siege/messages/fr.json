@@ -70,7 +70,15 @@
     "colStoredAt": "Date de stockage",
     "colStatus": "Statut",
     "empty": "Aucun lot pour ce filtre.",
-    "count": "{count, plural, =0 {Aucun lot} one {# lot} other {# lots}}"
+    "count": "{count, plural, =0 {Aucun lot} one {# lot} other {# lots}}",
+    "search": "Rechercher un lot…",
+    "colAge": "Âge",
+    "ageDays": "{count, plural, one {# jour} other {# jours}}",
+    "fifoLabel": "Trié par date de stockage (FIFO)",
+    "noResults": "Aucun lot ne correspond à la recherche.",
+    "statusAll": "Tous",
+    "prevPage": "Page précédente",
+    "nextPage": "Page suivante"
   },
   "countries": {
     "BR": "Brésil",
@@ -90,7 +98,10 @@
     "noMeasurements": "Aucune mesure enregistrée pour ce lot.",
     "alertsTitle": "Alertes du lot",
     "noAlerts": "Aucune alerte.",
-    "notFound": "Lot introuvable ou accès refusé."
+    "notFound": "Lot introuvable ou accès refusé.",
+    "age": "Ancienneté",
+    "nextControl": "Prochain contrôle",
+    "inDays": "{count, plural, =0 {aujourd'hui} one {dans # jour} other {dans # jours}}"
   },
   "alertType": {
     "SEUIL_TEMPERATURE": "Seuil température",

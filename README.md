@@ -51,6 +51,7 @@ doc/            → ADRs, journal de session, glossaire
 | PostgreSQL + TimescaleDB | `timescale/timescaledb:latest-pg16` | 5432 |
 | MQTT Broker | `eclipse-mosquitto:2` | 1883 / 9001 (WS) |
 | Node-RED (alerting) | `nodered/node-red:latest` | 1880 |
+| Mailhog (emails dev) | `mailhog/mailhog:latest` | 1025 (SMTP) / 8025 (web) |
 
 ```bash
 # Démarrer

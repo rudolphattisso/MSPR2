@@ -70,7 +70,15 @@
     "colStoredAt": "Data de armazenamento",
     "colStatus": "Status",
     "empty": "Nenhum lote para este filtro.",
-    "count": "{count, plural, =0 {Nenhum lote} one {# lote} other {# lotes}}"
+    "count": "{count, plural, =0 {Nenhum lote} one {# lote} other {# lotes}}",
+    "search": "Buscar um lote…",
+    "colAge": "Idade",
+    "ageDays": "{count, plural, one {# dia} other {# dias}}",
+    "fifoLabel": "Ordenado por data de armazenamento (FIFO)",
+    "noResults": "Nenhum lote corresponde à busca.",
+    "statusAll": "Todos",
+    "prevPage": "Página anterior",
+    "nextPage": "Próxima página"
   },
   "countries": {
     "BR": "Brasil",
@@ -90,7 +98,10 @@
     "noMeasurements": "Nenhuma medição registrada para este lote.",
     "alertsTitle": "Alertas do lote",
     "noAlerts": "Sem alertas.",
-    "notFound": "Lote não encontrado ou acesso negado."
+    "notFound": "Lote não encontrado ou acesso negado.",
+    "age": "Idade",
+    "nextControl": "Próximo controle",
+    "inDays": "{count, plural, =0 {hoje} one {em # dia} other {em # dias}}"
   },
   "alertType": {
     "SEUIL_TEMPERATURE": "Limite de temperatura",

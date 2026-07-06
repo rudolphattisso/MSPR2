@@ -70,7 +70,15 @@
     "colStoredAt": "Storage date",
     "colStatus": "Status",
     "empty": "No lots for this filter.",
-    "count": "{count, plural, =0 {No lots} one {# lot} other {# lots}}"
+    "count": "{count, plural, =0 {No lots} one {# lot} other {# lots}}",
+    "search": "Search a lot…",
+    "colAge": "Age",
+    "ageDays": "{count, plural, one {# day} other {# days}}",
+    "fifoLabel": "Sorted by storage date (FIFO)",
+    "noResults": "No lot matches your search.",
+    "statusAll": "All",
+    "prevPage": "Previous page",
+    "nextPage": "Next page"
   },
   "countries": {
     "BR": "Brazil",
@@ -90,7 +98,10 @@
     "noMeasurements": "No measurements recorded for this lot.",
     "alertsTitle": "Lot alerts",
     "noAlerts": "No alerts.",
-    "notFound": "Lot not found or access denied."
+    "notFound": "Lot not found or access denied.",
+    "age": "Age",
+    "nextControl": "Next check",
+    "inDays": "{count, plural, =0 {today} one {in # day} other {in # days}}"
   },
   "alertType": {
     "SEUIL_TEMPERATURE": "Temperature threshold",

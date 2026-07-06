@@ -44,6 +44,14 @@ services:
     depends_on:
       - mqtt
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: futurekawa-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   db_data:
   mosquitto_data:

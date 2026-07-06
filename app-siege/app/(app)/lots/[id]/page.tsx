@@ -39,6 +39,13 @@ export default async function LotDetailPage({
   ])
 
   const country = lot.warehouse?.country
+  // Ancienneté + prochain contrôle (cadence 30 jours depuis le stockage).
+  const DAY = 86_400_000
+  const ageDays = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(lot.storedAt).getTime()) / DAY),
+  )
+  const daysToControl = (30 - (ageDays % 30)) % 30
   const labels = measurements.map((m) =>
     format.dateTime(new Date(m.recordedAt), {
       month: "short",
@@ -49,7 +56,7 @@ export default async function LotDetailPage({
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <Link
         href="/lots"
         className="text-sm text-amber-700 hover:underline dark:text-amber-500"
@@ -89,6 +96,22 @@ export default async function LotDetailPage({
             {format.dateTime(new Date(lot.storedAt), { dateStyle: "medium" })}
           </dd>
         </div>
+        <div>
+          <dt className="text-stone-500 dark:text-stone-400">
+            {t("lotDetail.age")}
+          </dt>
+          <dd className="mt-0.5 font-medium">
+            {t("lots.ageDays", { count: ageDays })}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-stone-500 dark:text-stone-400">
+            {t("lotDetail.nextControl")}
+          </dt>
+          <dd className="mt-0.5 font-medium">
+            {t("lotDetail.inDays", { count: daysToControl })}
+          </dd>
+        </div>
       </dl>
 
       {measurements.length === 0 || !country ? (
@@ -98,6 +121,7 @@ export default async function LotDetailPage({
       ) : (
         <MeasurementsChart
           labels={labels}
+          times={measurements.map((m) => m.recordedAt)}
           temps={measurements.map((m) => m.temperature)}
           hums={measurements.map((m) => m.humidity)}
           thresholds={{
