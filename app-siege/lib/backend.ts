@@ -148,8 +148,29 @@ export async function getDashboardStats() {
   const ageDays = (d: string) => (now - new Date(d).getTime()) / DAY
   const within30 = (d: string) => now - new Date(d).getTime() <= 30 * DAY
 
+  // Répartition des lots par statut.
+  const statusCounts = {
+    CONFORME: lots.filter((l) => l.status === "CONFORME").length,
+    EN_ALERTE: lots.filter((l) => l.status === "EN_ALERTE").length,
+    PERIME: lots.filter((l) => l.status === "PERIME").length,
+  }
+
+  // Nombre d'alertes par jour sur les 30 derniers jours.
+  const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10)
+  const alertsPerDay: { date: string; count: number }[] = []
+  for (let i = 29; i >= 0; i--) {
+    const key = dayKey(now - i * DAY)
+    alertsPerDay.push({
+      date: key,
+      count: alerts.filter((a) => dayKey(new Date(a.createdAt).getTime()) === key)
+        .length,
+    })
+  }
+
   return {
     totalLots: lots.length,
+    statusCounts,
+    alertsPerDay,
     activeAlerts: alerts.filter((a) => !a.isResolved).length,
     perime: lots.filter((l) => l.status === "PERIME").length,
     countries: new Set(lots.map((l) => l.warehouse?.countryId).filter(Boolean))
@@ -172,4 +193,37 @@ export async function getDashboardStats() {
       )
       .slice(0, 4),
   }
+}
+
+// Tendance des conditions de stockage (moyennes température + humidité par jour,
+// sur 30 jours, tous entrepôts autorisés selon le rôle). Alimente la courbe siège.
+export async function getConditionsTrend() {
+  const warehouses = await getWarehouses() // déjà filtré par rôle/pays
+  const allowed = new Set(warehouses.map((w) => w.id))
+  const since = new Date(Date.now() - 30 * DAY).toISOString()
+
+  const measurements = (
+    await aggregateArray<Measurement>(`/api/measurements?since=${since}`)
+  ).filter((m) => allowed.has(m.warehouseId))
+
+  // Regroupement par jour → moyennes.
+  const byDay = new Map<string, { temp: number[]; hum: number[] }>()
+  for (const m of measurements) {
+    const key = new Date(m.recordedAt).toISOString().slice(0, 10)
+    if (!byDay.has(key)) byDay.set(key, { temp: [], hum: [] })
+    const b = byDay.get(key)!
+    b.temp.push(m.temperature)
+    b.hum.push(m.humidity)
+  }
+
+  const avg = (xs: number[]) =>
+    xs.length ? Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * 10) / 10 : 0
+
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, b]) => ({
+      date,
+      avgTemp: avg(b.temp),
+      avgHumidity: avg(b.hum),
+    }))
 }

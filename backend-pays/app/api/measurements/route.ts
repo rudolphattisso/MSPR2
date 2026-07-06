@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import { checkMeasurementAlerts } from "@/lib/alert-rules"
 import { prisma } from "@/lib/prisma"
 
+// Liste des mesures (pour l'agrégateur siège : courbes de conditions).
+// Filtres optionnels : ?since=<ISO> (mesures récentes), ?warehouseId=<id>.
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const since = searchParams.get("since")
+  const warehouseId = searchParams.get("warehouseId")
+
+  const measurements = await prisma.measurement.findMany({
+    where: {
+      ...(since ? { recordedAt: { gte: new Date(since) } } : {}),
+      ...(warehouseId ? { warehouseId } : {}),
+    },
+    orderBy: { recordedAt: "asc" },
+  })
+
+  return NextResponse.json(measurements)
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { warehouseId, temperature, humidity, recordedAt } = body

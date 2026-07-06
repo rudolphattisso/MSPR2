@@ -1,9 +1,12 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { getTranslations, getFormatter } from "next-intl/server"
-import { getDashboardStats } from "@/lib/backend"
+import { getDashboardStats, getConditionsTrend } from "@/lib/backend"
 import { Card } from "@/components/ui/card"
 import { CountryDonut } from "@/components/dashboard/country-donut"
+import { ConditionsChart } from "@/components/dashboard/conditions-chart"
+import { BarChart } from "@/components/dashboard/bar-chart"
+import { DashboardTabs } from "@/components/dashboard/dashboard-tabs"
 
 // Icônes KPI (SVG inline, stroke courant — pas de dépendance).
 const ICONS: Record<string, ReactNode> = {
@@ -37,12 +40,15 @@ const ICONS: Record<string, ReactNode> = {
   ),
 }
 
-// Tableau de bord : KPIs + tendances réelles (30 j) + répartition pays (donut)
-// + dernières alertes. Calculs dans getDashboardStats (filtrés par rôle).
+// Tableau de bord : KPIs persistants + onglets (Conditions / Stocks / Alertes)
+// pour tout consulter sans scroll. Données filtrées par rôle.
 export default async function DashboardPage() {
   const t = await getTranslations()
   const format = await getFormatter()
-  const stats = await getDashboardStats()
+  const [stats, trend] = await Promise.all([
+    getDashboardStats(),
+    getConditionsTrend(),
+  ])
 
   const kpis = [
     { key: "lots", label: t("dashboard.kpiLots"), value: stats.totalLots, trend: stats.lotsAdded30, gradient: "from-coffee-500 to-coffee-700", iconClass: "bg-coffee-100 text-coffee-700 dark:bg-coffee-900/40 dark:text-coffee-300" },
@@ -57,6 +63,102 @@ export default async function DashboardPage() {
     count: c.count,
   }))
 
+  const dayLabel = (d: string) =>
+    format.dateTime(new Date(d), { day: "numeric", month: "short" })
+
+  const conditionsTab = (
+    <Card className="flex h-full flex-col">
+      <h2 className="mb-4 text-sm font-semibold">{t("dashboard.conditionsTitle")}</h2>
+      <div className="min-h-0 flex-1">
+        <ConditionsChart
+          labels={trend.map((d) => dayLabel(d.date))}
+          temps={trend.map((d) => d.avgTemp)}
+          hums={trend.map((d) => d.avgHumidity)}
+          i18n={{ temperature: t("lotDetail.temperature"), humidity: t("lotDetail.humidity") }}
+          height="h-full"
+        />
+      </div>
+    </Card>
+  )
+
+  const stocksTab = (
+    <div className="grid h-full gap-4 lg:grid-cols-2">
+      <Card className="flex h-full flex-col">
+        <h2 className="mb-4 text-sm font-semibold">{t("dashboard.distribution")}</h2>
+        <div className="flex flex-1 items-center justify-center">
+          <CountryDonut data={donutData} totalLabel={t("dashboard.total")} />
+        </div>
+      </Card>
+      <Card className="flex h-full flex-col">
+        <h2 className="mb-4 text-sm font-semibold">{t("dashboard.lotStatusTitle")}</h2>
+        <div className="min-h-0 flex-1">
+          <BarChart
+            labels={[t("status.CONFORME"), t("status.EN_ALERTE"), t("status.PERIME")]}
+            values={[stats.statusCounts.CONFORME, stats.statusCounts.EN_ALERTE, stats.statusCounts.PERIME]}
+            colors={["#16a34a", "#f59e0b", "#ef4444"]}
+            height="h-full"
+          />
+        </div>
+        <Link
+          href="/lots"
+          className="mt-4 block rounded-lg border border-coffee-200 px-4 py-2 text-center text-sm font-medium text-coffee-700 transition-colors hover:bg-coffee-50 dark:border-coffee-800 dark:text-coffee-300 dark:hover:bg-coffee-900/30"
+        >
+          {t("dashboard.viewAllLots")}
+        </Link>
+      </Card>
+    </div>
+  )
+
+  const alertsTab = (
+    <div className="grid h-full gap-4 lg:grid-cols-2">
+      <Card className="flex h-full flex-col">
+        <h2 className="mb-4 text-sm font-semibold">{t("dashboard.alertsTimelineTitle")}</h2>
+        <div className="min-h-0 flex-1">
+          <BarChart
+            labels={stats.alertsPerDay.map((d) => dayLabel(d.date))}
+            values={stats.alertsPerDay.map((d) => d.count)}
+            colors="#b45309"
+            height="h-full"
+          />
+        </div>
+      </Card>
+      <Card className="flex h-full flex-col">
+        <h2 className="mb-3 text-sm font-semibold">{t("dashboard.recentAlerts")}</h2>
+        <ul className="flex-1 space-y-3">
+          {stats.recentAlerts.map((a) => (
+            <li key={a.id} className="flex items-start gap-3 text-sm">
+              <span
+                className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                  a.type === "PEREMPTION" ? "bg-red-500" : "bg-amber-500"
+                }`}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <Link href={`/lots/${a.lotId}`} className="font-medium hover:underline">
+                    {a.lot?.reference ?? "—"}
+                  </Link>
+                  <span className="shrink-0 text-xs text-stone-400">
+                    {format.relativeTime(new Date(a.createdAt))}
+                  </span>
+                </div>
+                <div className="truncate text-stone-500 dark:text-stone-400">
+                  {t(`alertType.${a.type}`)}
+                  {a.lot?.warehouse?.name ? ` · ${a.lot.warehouse.name}` : ""}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <Link
+          href="/alerts"
+          className="mt-4 block rounded-lg border border-coffee-200 px-4 py-2 text-center text-sm font-medium text-coffee-700 transition-colors hover:bg-coffee-50 dark:border-coffee-800 dark:text-coffee-300 dark:hover:bg-coffee-900/30"
+        >
+          {t("dashboard.viewAllAlerts")}
+        </Link>
+      </Card>
+    </div>
+  )
+
   return (
     <div className="flex flex-1 flex-col gap-6 animate-fade-in">
       <div>
@@ -64,7 +166,7 @@ export default async function DashboardPage() {
         <p className="text-sm text-stone-500 dark:text-stone-400">{t("dashboard.subtitle")}</p>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — persistants au-dessus des onglets */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
           <Card key={k.key}>
@@ -88,50 +190,13 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Donut + dernières alertes — remplit la hauteur restante */}
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-2">
-        <Card className="flex h-full flex-col">
-          <h2 className="mb-4 text-sm font-semibold">{t("dashboard.distribution")}</h2>
-          <div className="flex flex-1 items-center justify-center">
-            <CountryDonut data={donutData} totalLabel={t("dashboard.total")} />
-          </div>
-        </Card>
-
-        <Card className="flex h-full flex-col">
-          <h2 className="mb-3 text-sm font-semibold">{t("dashboard.recentAlerts")}</h2>
-          <ul className="flex-1 space-y-3">
-            {stats.recentAlerts.map((a) => (
-              <li key={a.id} className="flex items-start gap-3 text-sm">
-                <span
-                  className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                    a.type === "PEREMPTION" ? "bg-red-500" : "bg-amber-500"
-                  }`}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <Link href={`/lots/${a.lotId}`} className="font-medium hover:underline">
-                      {a.lot?.reference ?? "—"}
-                    </Link>
-                    <span className="shrink-0 text-xs text-stone-400">
-                      {format.relativeTime(new Date(a.createdAt))}
-                    </span>
-                  </div>
-                  <div className="truncate text-stone-500 dark:text-stone-400">
-                    {t(`alertType.${a.type}`)}
-                    {a.lot?.warehouse?.name ? ` · ${a.lot.warehouse.name}` : ""}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <Link
-            href="/alerts"
-            className="mt-4 block rounded-lg border border-coffee-200 px-4 py-2 text-center text-sm font-medium text-coffee-700 transition-colors hover:bg-coffee-50 dark:border-coffee-800 dark:text-coffee-300 dark:hover:bg-coffee-900/30"
-          >
-            {t("dashboard.viewAllAlerts")}
-          </Link>
-        </Card>
-      </div>
+      <DashboardTabs
+        tabs={[
+          { key: "conditions", label: t("dashboard.tabConditions"), content: conditionsTab },
+          { key: "stocks", label: t("dashboard.tabStocks"), content: stocksTab },
+          { key: "alerts", label: t("dashboard.tabAlerts"), content: alertsTab },
+        ]}
+      />
     </div>
   )
 }

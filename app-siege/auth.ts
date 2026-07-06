@@ -1,5 +1,6 @@
 import NextAuth, { CredentialsSignin } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import type { Role } from "@/types/domain"
 
 // Erreur dédiée : mot de passe correct mais email non vérifié.
 // Le `code` remonte dans l'URL (?code=email_not_verified) pour afficher le bon
@@ -66,8 +67,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role
-        session.user.countryId = token.countryId
+        session.user.role = token.role as Role
+        session.user.countryId = token.countryId as string | null
       }
       return session
     },
