@@ -16,6 +16,15 @@ export default defineConfig({
     environment: "node",
     include: ["**/*.{test,spec}.{ts,tsx}"],
     exclude: ["node_modules", ".next", "dist"],
+    // Couverture ciblée sur la logique testable (agrégateur, guards, proxy).
+    // L'UI (pages/composants) est validée par l'exécution, pas en tests unitaires.
+    coverage: {
+      provider: "v8",
+      all: true,
+      include: ["lib/**/*.ts", "proxy.ts"],
+      reporter: ["text", "html"],
+      thresholds: { lines: 80, functions: 80, statements: 80 },
+    },
     env: {
       SERVICE_API_KEY: "test-service-key",
       AUTH_SECRET: "test-auth-secret-key-must-be-long-enough",
