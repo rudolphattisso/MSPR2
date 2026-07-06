@@ -17,6 +17,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # Base dédiée aux tests (isolée, éphémère — n'affecte jamais les données de démo).
+  db-test:
+    image: timescale/timescaledb:latest-pg16
+    container_name: futurekawa-db-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-futurekawa}
+      POSTGRES_USER: ${POSTGRES_USER:-futurekawa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-futurekawa_secret}
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-futurekawa}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   mqtt:
     image: eclipse-mosquitto:2
     container_name: futurekawa-mqtt
