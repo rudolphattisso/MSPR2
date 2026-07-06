@@ -8,7 +8,6 @@
     }
   },
   "coverageAnalysis": "perTest",
-  "mutator": "typescript",
   "tsconfigFile": "tsconfig.json",
   "reporters": ["cleartext", "html", "progress"],
   "htmlReporter": {

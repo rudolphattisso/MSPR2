@@ -29,13 +29,12 @@
     "tsx": "^4.22.4"
   },
   "devDependencies": {
-    "@stryker-mutator/core": "^6.0.0",
-    "@stryker-mutator/typescript": "^6.0.0",
-    "@stryker-mutator/vite-runner": "^6.0.0",
+    "@stryker-mutator/core": "^8.7.1",
+    "@stryker-mutator/vitest-runner": "^8.7.1",
+    "@vitest/coverage-v8": "^1.5.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
-    "@types/vitest": "^0.40.0",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -44,7 +43,6 @@
     "eslint-config-next": "16.2.7",
     "prisma": "^7.8.0",
     "typescript": "^5",
-    "vite-tsconfig-paths": "^4.4.0",
     "vitest": "^1.5.0"
   }
 }

@@ -14,11 +14,20 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    globalSetup: ["./__tests__/global-setup.ts"],
     setupFiles: ["./__tests__/setup.ts"],
     include: ["**/*.{test,spec}.ts"],
     exclude: ["node_modules", ".next", "dist"],
+    // Couverture ciblée sur le code métier (exclut le client Prisma généré,
+    // les fichiers de config, le seed et l'instrumentation non testables).
+    coverage: {
+      provider: "v8",
+      all: true,
+      include: ["lib/**/*.ts", "app/api/**/*.ts", "proxy.ts"],
+      reporter: ["text", "html"],
+      thresholds: { lines: 80, functions: 80, statements: 80 },
+    },
     // Run test files sequentially to avoid DB collisions when sharing the same database
-    fileParallelism: false,
     fileParallelism: false,
     deps: ({
       // Force inline processing for these ESM deps during tests.
