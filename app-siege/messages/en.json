@@ -23,8 +23,15 @@
     "thisMonth": "this month",
     "recentAlerts": "Latest alerts",
     "viewAllAlerts": "View all alerts",
+    "viewAllLots": "View all lots",
     "distribution": "Distribution by country",
-    "total": "Total"
+    "total": "Total",
+    "conditionsTitle": "Storage conditions (30 d)",
+    "lotStatusTitle": "Lot statuses",
+    "alertsTimelineTitle": "Alerts (last 30 days)",
+    "tabConditions": "Conditions",
+    "tabStocks": "Stock",
+    "tabAlerts": "Alerts"
   },
   "theme": {
     "light": "Light mode",
