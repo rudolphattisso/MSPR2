@@ -196,10 +196,23 @@ Détail dans `doc/adr/`.
               Vérif email à l'inscription (session 013) : nodemailer + Mailhog,
               token usage unique 24h, login refusé si non vérifié (GET /api/auth/verify)
 
-[ ] Bloc 7  — Frontend + Agrégateur siège  ← fusion anciens Blocs 7 & 8
-              API agrégateur dans frontend/app/api/ (stocks, mesures, alertes)
-              UI lots triés FIFO, courbes temp/humidité
-              Statuts alertes, sélection pays/entrepôt
+[x] Bloc 7  — Frontend + Agrégateur siège  ← fusion anciens Blocs 7 & 8
+              API agrégateur (app-siege/lib/backend.ts) : lots/stocks, mesures,
+              alertes — agrégation multi-backends + filtrage par rôle
+              Dashboard : KPIs réels (30 j glissants), donut répartition pays,
+              dernières alertes (lien direct lot)
+              UI lots triés FIFO + filtres pays/entrepôt, lignes cliquables
+              Détail lot : infos + courbes temp/humidité (Chart.js, zone idéale pays)
+              Alertes : liste filtrable pays + badges actif/résolu
+              Auth UI : login/register (œil mot de passe), page compte
+              i18n 4 langues (fr/en/es/pt-BR), thème clair/sombre
+              Identité : accent ambre primaire + secondaire café, sidebar repliable
+              Liste lots : recherche, colonne « Âge », filtre par statut, pagination
+              Détail lot : « ancienneté » + « prochain contrôle » (cadence 30 j),
+                sélecteur de période 7 j / 30 j sur les courbes
+              Sidebar : badge compteur d'alertes actives
+              ↳ Polish optionnel restant (non bloquant) :
+                skeletons de chargement, micro-animations
 
 [x] Bloc 8  — Alerting Node-RED
               Flow MQTT → règles → email responsable
