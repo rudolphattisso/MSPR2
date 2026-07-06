@@ -33,8 +33,12 @@ pipeline {
 
         stage('Test') {
             steps {
-                // Placeholder — tests réels ajoutés au Bloc 9
-                echo 'Tests à venir — Bloc 9'
+                dir('backend-pays') {
+                    sh 'npm run test'
+                }
+                dir('app-siege') {
+                    sh 'npm run test'
+                }
             }
         }
 
