@@ -38,11 +38,60 @@ services:
     volumes:
       - ./backend-pays/node-red:/data
     environment:
-      - BACKEND_PAYS_URL=${BACKEND_PAYS_URL:-http://host.docker.internal:3001}
+      - BACKEND_PAYS_URL=${BACKEND_PAYS_URL:-http://backend-pays:3001}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - mqtt
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: futurekawa-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  backend-pays:
+    build: ./backend-pays
+    container_name: futurekawa-backend-pays
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-futurekawa}:${POSTGRES_PASSWORD:-futurekawa_secret}@db:5432/${POSTGRES_DB:-futurekawa}
+      MQTT_BROKER_URL: mqtt://mqtt:1883
+      MQTT_TOPIC_PREFIX: futurekawa
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-changeme}
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_FROM: FutureKawa <no-reply@futurekawa.local>
+      APP_PUBLIC_URL: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+      mailhog:
+        condition: service_started
+
+  app-siege:
+    build: ./app-siege
+    container_name: futurekawa-app-siege
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      AUTH_SECRET: ${AUTH_SECRET:-changeme}
+      AUTH_URL: http://localhost:3000
+      AUTH_API_URL: http://backend-pays:3001
+      BACKEND_BRESIL_URL: http://backend-pays:3001
+      BACKEND_EQUATEUR_URL: http://backend-pays:3001
+      BACKEND_COLOMBIE_URL: http://backend-pays:3001
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-changeme}
+    depends_on:
+      backend-pays:
+        condition: service_started
 
 volumes:
   db_data:
