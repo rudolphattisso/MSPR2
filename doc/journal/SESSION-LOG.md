@@ -545,3 +545,31 @@
 - Provider Credentials (email + password hashé bcrypt)
 - Middleware protège toutes les routes `/api/*`
 - Rôles : ADMIN / MANAGER_PAYS / VIEWER
+
+---
+
+## Session 015 — 2026-07-06
+
+### Ce qui a été fait
+- Résolution des problèmes de validation Prisma sous Prisma 7 (ajout de `url = env("DATABASE_URL")` dans `schema.prisma`)
+- Déploiement des migrations de base de données sur la base de test locale (port 5433)
+- Initialisation des tables avec les données de référence et de démonstration via `npx prisma db seed`
+- Écriture d'une couverture de test robuste pour le `backend-pays` :
+  - `__tests__/api-routes.test.ts` : Tests de tous les endpoints REST (warehouses, alerts, measurements, CRUD lots, lot measurements)
+  - `__tests__/mqtt-worker.test.ts` : Tests d'ingestion et validation des payloads MQTT
+  - `__tests__/proxy.test.ts` : Tests de validation de la clé de service de l'API
+- Correction des collisions de tests concurrents par désactivation du parallélisme dans Vitest (`fileParallelism: false` dans `vitest.config.ts`)
+- Validation de l'exécution complète de la suite de tests (26/26 réussis)
+
+### Fichiers modifiés / créés
+- `backend-pays/prisma/schema.prisma` (modifié)
+- `backend-pays/vitest.config.ts` (modifié)
+- `backend-pays/__tests__/api-routes.test.ts` (nouveau)
+- `backend-pays/__tests__/mqtt-worker.test.ts` (nouveau)
+- `backend-pays/__tests__/proxy.test.ts` (nouveau)
+
+### Prochain démarrage
+- [ ] Configurer et ajouter Vitest et Stryker pour `app-siege`
+- [ ] Écrire les tests unitaires et de mutation pour `app-siege` (lib/backend.ts, lib/auth-guards.ts, proxy.ts)
+- [ ] Mettre à jour le `Jenkinsfile` avec les commandes de test finalisées
+
