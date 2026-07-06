@@ -134,14 +134,20 @@ Le pipeline est défini dans `Jenkinsfile` à la racine (pipeline as code).
 - Plugin **NodeJS** installé dans Jenkins
 - Outil `node-20` configuré dans *Manage Jenkins > Tools > NodeJS installations*
 
+> Prérequis supplémentaire : **Docker + Docker Compose** disponibles sur l'agent (base de test + packaging).
+
 ### Stages
 
 | Stage | Contenu |
 |---|---|
-| Install | `npm ci` dans `backend-pays/` et `app-siege/` |
+| Install | `npm install` dans `backend-pays/` et `app-siege/` |
 | Lint | `npm run lint` dans les deux apps |
-| Test | Placeholder — tests réels au Bloc 9 |
+| Base de test | `docker compose up -d db-test` (Postgres dédié, port 5433) |
+| Tests + Couverture | `npm run coverage` (les deux apps) — **échoue si couverture < 80 %** |
 | Build | `npm run build` dans les deux apps |
+| Packaging Docker | `docker compose build backend-pays app-siege` (images déployables) |
+
+En fin de pipeline (`post`) : la base de test est arrêtée et les **rapports de couverture** des deux apps sont archivés comme artefacts (preuve d'exécution).
 
 ---
 
@@ -151,4 +157,42 @@ Le pipeline est défini dans `Jenkinsfile` à la racine (pipeline as code).
 - `doc/journal/SESSION-LOG.md` — Journal de session
 - `doc/glossaire.md` — Termes techniques
 - `doc/guide-technique.md` — Guide pédagogique du projet (concepts, schémas, décisions)
+- `doc/plan-de-tests.md` — Plan de tests (stratégie, cas, critères, anomalies)
 - `doc/COMMIT_CHARTER.md` — Conventions de commit
+
+---
+
+## Tests automatisés et couverture
+
+Les tests s'exécutent contre une **base de test dédiée** (`db-test`, port **5433**),
+**isolée des données de démo** (elles ne sont jamais touchées). La base de test est
+migrée et seedée automatiquement par le `globalSetup` de Vitest.
+
+```bash
+# 1. Démarrer uniquement la base de test
+docker compose up -d db-test
+
+# 2. Backend pays — tests + couverture
+cd backend-pays
+npm install
+npm run test        # unitaires + intégration + API (26 tests)
+npm run coverage    # + rapport de couverture (échoue si < 80 %)
+npm run mutation    # (bonus) tests de mutation — Stryker
+
+# 3. App siège — tests + couverture
+cd ../app-siege
+npm install
+npm run test        # logique agrégateur / guards / proxy (19 tests)
+npm run coverage
+```
+
+**Couverture actuelle** (code métier — l'UI est validée par l'exécution) :
+
+| App | Lignes | Fonctions |
+|---|---|---|
+| backend-pays | ~85 % | ~91 % |
+| app-siege (logique) | ~97 % | 100 % |
+
+- Rapports HTML : `backend-pays/coverage/` et `app-siege/coverage/`.
+- Rapport de mutation : `backend-pays/reports/mutation/`.
+- Seuil de **80 %** enforced dans `vitest.config.ts` (échec sinon → utilisé par la CI).
