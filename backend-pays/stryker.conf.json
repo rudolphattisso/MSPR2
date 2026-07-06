@@ -1,0 +1,35 @@
+{
+  "$schema": "https://stryker-mutator.io/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "./vitest.config.ts",
+    "project": {
+      "testTimeout": 30000
+    }
+  },
+  "coverageAnalysis": "perTest",
+  "mutator": "typescript",
+  "tsconfigFile": "tsconfig.json",
+  "reporters": ["cleartext", "html", "progress"],
+  "htmlReporter": {
+    "baseDir": "reports/mutation"
+  },
+  "files": [
+    "app/api/**/*.ts",
+    "lib/**/*.ts"
+  ],
+  "mutate": [
+    "lib/**/*.ts",
+    "app/api/**/*.ts"
+  ],
+  "ignoreMethods": [
+    "console.*",
+    "logger.*"
+  ],
+  "ignoreMutations": [
+    "BooleanSubstitution",
+    "StringLiteral",
+    "ArrayDeclaration",
+    "TemplateLiteral"
+  ]
+}

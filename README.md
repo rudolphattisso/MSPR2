@@ -128,3 +128,27 @@ Le pipeline est défini dans `Jenkinsfile` à la racine (pipeline as code).
 - `doc/glossaire.md` — Termes techniques
 - `doc/guide-technique.md` — Guide pédagogique du projet (concepts, schémas, décisions)
 - `doc/COMMIT_CHARTER.md` — Conventions de commit
+
+---
+
+## Tests automatisés et couverture
+
+Avant d'exécuter les tests, démarre les services nécessaires :
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+Puis dans `backend-pays` :
+
+```bash
+cd backend-pays
+npm install
+npm run test
+npm run coverage
+npm run mutation
+```
+
+Le rapport de couverture est généré par Vitest.
+Le rapport de mutation est écrit dans `backend-pays/reports/mutation`.
