@@ -2,6 +2,7 @@ import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
+import { getAlerts } from "@/lib/backend"
 import { Sidebar } from "@/components/shell/sidebar"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -17,6 +18,7 @@ export default async function AppLayout({
 
   const t = await getTranslations()
   const { name, role } = session.user
+  const activeAlerts = (await getAlerts()).filter((a) => !a.isResolved).length
   const initials =
     name
       ?.split(/\s+/)
@@ -33,7 +35,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1">
-      <Sidebar />
+      <Sidebar alertsCount={activeAlerts} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 md:px-6">

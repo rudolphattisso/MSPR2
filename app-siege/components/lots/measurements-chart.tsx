@@ -1,5 +1,7 @@
 "use client"
 
+import { useMemo, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Line } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -111,14 +113,19 @@ export type Thresholds = {
   humidityTolerance: number
 }
 
+const DAY = 86_400_000
+const PERIODS = [7, 30] as const
+
 export function MeasurementsChart({
   labels,
+  times,
   temps,
   hums,
   thresholds,
   i18n,
 }: {
   labels: string[]
+  times: string[]
   temps: number[]
   hums: number[]
   thresholds: Thresholds
@@ -129,32 +136,69 @@ export function MeasurementsChart({
     idealZone: string
   }
 }) {
+  const tLots = useTranslations("lots")
+  const [period, setPeriod] = useState<number>(30)
+
+  // Les mesures arrivent triées par date croissante : on garde la fenêtre voulue.
+  const start = useMemo(() => {
+    const cutoff = Date.now() - period * DAY
+    const idx = times.findIndex((ts) => new Date(ts).getTime() >= cutoff)
+    return idx === -1 ? times.length : idx
+  }, [times, period])
+
+  const view = {
+    labels: labels.slice(start),
+    temps: temps.slice(start),
+    hums: hums.slice(start),
+  }
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="mb-3 text-sm font-medium">{i18n.temperature}</h3>
-        <MetricChart
-          labels={labels}
-          values={temps}
-          ideal={thresholds.idealTemp}
-          tolerance={thresholds.tempTolerance}
-          color="#ea580c"
-          measuredLabel={i18n.measured}
-          zoneLabel={i18n.idealZone}
-        />
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <div className="inline-flex rounded-lg border border-stone-300 p-0.5 dark:border-slate-700">
+          {PERIODS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPeriod(p)}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                period === p
+                  ? "bg-amber-700 text-white"
+                  : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              {tLots("ageDays", { count: p })}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="mb-3 text-sm font-medium">{i18n.humidity}</h3>
-        <MetricChart
-          labels={labels}
-          values={hums}
-          ideal={thresholds.idealHumidity}
-          tolerance={thresholds.humidityTolerance}
-          color="#0284c7"
-          measuredLabel={i18n.measured}
-          zoneLabel={i18n.idealZone}
-        />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="mb-3 text-sm font-medium">{i18n.temperature}</h3>
+          <MetricChart
+            labels={view.labels}
+            values={view.temps}
+            ideal={thresholds.idealTemp}
+            tolerance={thresholds.tempTolerance}
+            color="#ea580c"
+            measuredLabel={i18n.measured}
+            zoneLabel={i18n.idealZone}
+          />
+        </div>
+
+        <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="mb-3 text-sm font-medium">{i18n.humidity}</h3>
+          <MetricChart
+            labels={view.labels}
+            values={view.hums}
+            ideal={thresholds.idealHumidity}
+            tolerance={thresholds.humidityTolerance}
+            color="#0284c7"
+            measuredLabel={i18n.measured}
+            zoneLabel={i18n.idealZone}
+          />
+        </div>
       </div>
     </div>
   )

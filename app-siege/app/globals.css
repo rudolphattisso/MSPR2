@@ -22,6 +22,20 @@
   --color-coffee-700: #4b3621;
   --color-coffee-800: #3a2a1a;
   --color-coffee-900: #2a1e13;
+
+  /* Micro-animation d'entrée des contenus de page. */
+  --animate-fade-in: fade-in 0.35s ease-out both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 body {
