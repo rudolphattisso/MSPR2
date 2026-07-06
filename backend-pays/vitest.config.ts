@@ -40,7 +40,9 @@ export default defineConfig({
       POSTGRES_DB: "futurekawa",
       POSTGRES_HOST: "localhost",
       POSTGRES_PORT: "5433",
-      DATABASE_URL: "postgresql://futurekawa:futurekawa_secret@localhost:5433/futurekawa",
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ??
+        "postgresql://futurekawa:futurekawa_secret@localhost:5433/futurekawa",
       SERVICE_API_KEY: "test-service-key",
       SMTP_HOST: "localhost",
       SMTP_PORT: "1025",

@@ -12,6 +12,13 @@ pipeline {
         timestamps()
     }
 
+    environment {
+        // Jenkins tourne en conteneur : la base de test (publiée sur l'hôte en 5433)
+        // est jointe via host.docker.internal. En local (hors Jenkins), la valeur
+        // par défaut localhost:5433 est utilisée.
+        TEST_DATABASE_URL = 'postgresql://futurekawa:futurekawa_secret@host.docker.internal:5433/futurekawa'
+    }
+
     stages {
 
         stage('Install') {
