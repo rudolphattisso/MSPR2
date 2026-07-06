@@ -3,6 +3,7 @@ import { execSync } from "node:child_process"
 // Base de TEST dédiée (service docker-compose `db-test`, port hôte 5433).
 // URL forcée en dur : garantit qu'on ne touche JAMAIS la base de dev (5432).
 const TEST_DATABASE_URL =
+  process.env.TEST_DATABASE_URL ??
   "postgresql://futurekawa:futurekawa_secret@localhost:5433/futurekawa"
 
 // Exécuté une seule fois avant toute la suite de tests :
