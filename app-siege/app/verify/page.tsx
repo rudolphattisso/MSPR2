@@ -1,16 +1,17 @@
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 
 const AUTH_API_URL = process.env.AUTH_API_URL ?? "http://localhost:3001"
 const SERVICE_API_KEY = process.env.SERVICE_API_KEY ?? ""
 
-// Cible du lien reçu par email. Appelle le backend (avec la clé de service)
-// pour valider le token, puis affiche le résultat.
+// Cible du lien reçu par email : valide le token via le backend, affiche le résultat.
 export default async function VerifyPage({
   searchParams,
 }: {
   searchParams: Promise<{ token?: string }>
 }) {
   const { token } = await searchParams
+  const t = await getTranslations()
 
   let ok = false
   if (token) {
@@ -22,38 +23,40 @@ export default async function VerifyPage({
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-black/10 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-zinc-900">
-        <h1 className="text-2xl font-semibold tracking-tight">FutureKawa</h1>
+    <div className="flex flex-1 items-center justify-center px-4">
+      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("common.appName")}
+        </h1>
 
         {ok ? (
           <>
-            <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
-              Email vérifié ✓
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              {t("auth.verifiedBadge")}
             </p>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Ton compte est activé. Tu peux maintenant te connecter.
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              {t("auth.verifiedMessage")}
             </p>
             <Link
               href="/login?verified=1"
-              className="inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              className="inline-block rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800"
             >
-              Se connecter
+              {t("auth.signIn")}
             </Link>
           </>
         ) : (
           <>
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-              Lien de vérification invalide ou expiré.
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
+              {t("auth.verifyErrorBadge")}
             </p>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Le lien a peut-être déjà été utilisé ou a expiré (24 h).
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              {t("auth.verifyErrorMessage")}
             </p>
             <Link
               href="/register"
-              className="inline-block rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              className="inline-block rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-100 dark:border-slate-700 dark:hover:bg-slate-800"
             >
-              Créer un compte
+              {t("auth.createAccountLink")}
             </Link>
           </>
         )}
