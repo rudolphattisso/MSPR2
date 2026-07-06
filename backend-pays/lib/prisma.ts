@@ -19,5 +19,14 @@ function createClient() {
   return new PrismaClient({ adapter })
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient()
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+// Initialisation paresseuse : le client réel n'est créé qu'au premier accès
+// (au runtime, avec DATABASE_URL défini) — pas à l'import. Ainsi `next build`
+// n'exige pas DATABASE_URL (les handlers d'API ne sont pas exécutés au build).
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client =
+      globalForPrisma.prisma ?? (globalForPrisma.prisma = createClient())
+    const value = Reflect.get(client, prop, client)
+    return typeof value === "function" ? value.bind(client) : value
+  },
+})
