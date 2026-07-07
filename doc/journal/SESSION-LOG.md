@@ -645,3 +645,47 @@
 
 **Mode de test actif : GUIDÉ** (test matériel — l'utilisateur exécute, Claude analyse)
 
+---
+
+## Session 017 — 2026-07-07
+
+### Contexte
+- Branche `feat/iot2`. Reprise du test matériel IoT, cette fois **sur réseau domestique** (box Bbox 2,4 GHz) au lieu du hotspot iPhone de la session 016.
+- Rappel utilisateur : **interdiction d'accéder à TOUT `config.h`** (y compris `futurekawa_sensor_test/`) — credentials WiFi. Mémoire mise à jour.
+
+### Ce qui a été fait
+- **Chaîne IoT validée E2E sur réseau maison** : ESP8266 → WiFi `Bbox-5F52F4F3-Secondaire` (IP `192.168.1.185`) → MQTT `192.168.1.32:1883` → Mosquitto → worker `backend-pays` → **TimescaleDB (insertion temps réel confirmée)**.
+  - Réception broker prouvée via `docker exec futurekawa-mqtt mosquitto_sub`.
+  - Infra PC déjà OK (db + mqtt Up, règle pare-feu 1883 Inbound Allow présente).
+- **Bug DHT11 résolu** : lectures NaN systématiques (`Erreur : lecture DHT invalide`) causées par un **capteur nu 4 broches SANS pull-up**. Cause secondaire diagnostiquée : anciens branchements en **inversion VCC/GND** → surchauffe → capteur potentiellement abîmé.
+  - Fix : câblage correct + **résistance pull-up 10 kΩ entre DATA et VCC** → lectures valides (`T=31.x°C H=35%`).
+  - `within_tolerance:false` = normal (humidité pièce ~35% hors seuil Brésil 55% ±2).
+- **Consolidation firmware** : fusion en **un seul dossier** `iot/esp8266/futurekawa_sensor/`.
+  - Le firmware fonctionnel (LEDs verte/rouge, tolérance, camelCase, debug WiFi) devient `futurekawa_sensor.ino` ; l'ancienne version sans LEDs est écrasée.
+  - Dossier `futurekawa_sensor_test/` supprimé, `config.h` fonctionnel déplacé (jamais lu), `.gitignore` nettoyé.
+- **Suppression DHT22** de tout le code + docs vivantes (firmware, `config.h.example`, glossaire, guide-technique). ESP32 (`iot/esp32/`) laissé intact comme référence (option 3).
+- **`config.h.example` refait** : schéma de câblage ASCII complet (DHT11 4 broches + pull-up 10 kΩ + LEDs D6/D7), seuils des 3 pays, mode simulation.
+
+### Fichiers modifiés
+- `iot/esp8266/futurekawa_sensor/futurekawa_sensor.ino` (remplacé par le firmware fonctionnel, sans DHT22)
+- `iot/esp8266/futurekawa_sensor/config.h.example` (schéma câblage + défines LEDs/seuils, DHT22/SHT31 retirés)
+- `iot/esp8266/futurekawa_sensor_test/futurekawa_sensor_test.ino` (**supprimé** — consolidé)
+- `.gitignore` (ligne `futurekawa_sensor_test/config.h` retirée)
+- `doc/glossaire.md` (entrée DHT22 supprimée ; DHT11 / GPIO / Pull-up réécrits pour ESP8266+DHT11)
+- `doc/guide-technique.md` (diagramme C4 `ESP32+DHT22` → `ESP8266+DHT11`, relation Mermaid alignée)
+- Mémoire Claude : `feedback_config_iot.md` (interdiction étendue à tous les `config.h`)
+
+### Décisions clés actées
+- **DHT11 nu 4 broches → pull-up 10 kΩ externe obligatoire** (le module 3 broches l'intègre via R1=5,1 kΩ). Sans pull-up = NaN permanent.
+- **Test matériel = réseau domestique 2,4 GHz** (box), reproductible : IP broker = IP PC sur le LAN (`192.168.1.32`), pare-feu 1883 ouvert.
+- **Un seul firmware ESP8266** (`futurekawa_sensor/`) = la version LEDs validée E2E. Plus de dossier `_test`.
+- **DHT22 abandonné** dans le projet (matériel réel = DHT11). ESP32 conservé en archive de référence.
+
+### Prochain démarrage
+**Bloc 5 IoT — TERMINÉ ✓ (matériel réel validé E2E jusqu'à la BDD, réseau domestique)**
+1. **Recompiler/flasher** le sketch consolidé `futurekawa_sensor/` dans Arduino IDE pour confirmer le build après renommage (l'utilisateur doit d'abord retirer la ligne commentée `// #define SENSOR_DHT22` de son `config.h` privé — cosmétique).
+2. **Committer + pousser** `feat/iot2` (branche en avance sur origin).
+3. Reprendre le **Bloc 9 — Tests (consolidation)** : Vitest + Stryker sur `app-siege` (lib/backend.ts, lib/auth-guards.ts, proxy.ts) + finaliser le `Jenkinsfile`.
+
+**Mode de test actif : GUIDÉ** (test matériel — l'utilisateur exécute, Claude analyse)
+
