@@ -80,9 +80,12 @@ services:
       MQTT_BROKER_URL: mqtt://mqtt:1883
       MQTT_TOPIC_PREFIX: futurekawa
       SERVICE_API_KEY: ${SERVICE_API_KEY:-changeme}
-      SMTP_HOST: mailhog
-      SMTP_PORT: "1025"
-      SMTP_FROM: FutureKawa <no-reply@futurekawa.local>
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-FutureKawa <no-reply@futurekawa.local>}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
       APP_PUBLIC_URL: http://localhost:3000
     depends_on:
       db:

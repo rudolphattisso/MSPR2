@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { AlertType, LotStatus } from "@/app/generated/prisma/client"
+import { AlertType, LotStatus, UserRole } from "@/app/generated/prisma/client"
 import { prisma } from "@/lib/prisma"
+import { sendAlertEmail } from "@/lib/email"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -51,7 +52,10 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const lot = await prisma.lot.findUnique({ where: { id: lotId } })
+  const lot = await prisma.lot.findUnique({
+    where: { id: lotId },
+    include: { warehouse: { include: { country: true } } },
+  })
   if (!lot) {
     return NextResponse.json({ error: "Lot introuvable" }, { status: 404 })
   }
@@ -71,6 +75,16 @@ export async function POST(req: NextRequest) {
     }
     return created
   })
+
+  const manager = await prisma.user.findFirst({
+    where: { role: UserRole.MANAGER_PAYS, countryId: lot.warehouse.countryId },
+  })
+  const to = manager?.email ?? process.env.ALERT_EMAIL_TO
+  if (to) {
+    sendAlertEmail(to, { lotReference: lot.reference, type, message }).catch((e) =>
+      console.error("[alerts] Envoi email échoué:", e)
+    )
+  }
 
   return NextResponse.json(alert, { status: 201 })
 }
