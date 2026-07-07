@@ -49,10 +49,7 @@ Toute application capable de publier ou de s'abonner à des topics via un broker
 ## D
 
 **DHT11**
-Capteur électronique temp/humidité, version économique du DHT22. Précision : ±2°C / ±5% humidité. Même protocole single-wire, même bibliothèque Adafruit. Utilisé dans ce projet (kit OSOYOO). Suffisant pour le prototype ; DHT22 recommandé en production.
-
-**DHT22**
-Capteur électronique mesurant température et humidité relative. Précision : ±0.5°C / ±2-5% humidité. Communique via protocole single-wire avec le microcontrôleur.
+Capteur électronique de température et d'humidité relative. Précision : ±2°C / ±5% humidité. Communique via protocole single-wire (bibliothèque Adafruit DHT). Capteur retenu pour ce projet (kit OSOYOO) — suffisant pour le prototype. Câblé sur D5 (GPIO14) avec une résistance pull-up 10 kΩ entre DATA et VCC (capteur nu 4 broches).
 
 **Docker Compose**
 Outil pour définir et lancer une stack multi-conteneurs via un fichier `docker-compose.yml`. Une commande (`docker compose up`) démarre tous les services (PostgreSQL, Mosquitto, Node-RED, Next.js apps).
@@ -97,7 +94,7 @@ Programme visuel composé de nœuds connectés représentant un traitement de do
 ## G
 
 **GPIO (General Purpose Input/Output)**
-Broches programmables d'un microcontrôleur (ESP32 : 30+ broches). Chaque broche peut être configurée en entrée (lire un capteur) ou en sortie (allumer une LED, piloter un relais). Dans ce projet : GPIO 4 est la broche de données du capteur DHT22 par défaut (configurable dans `config.h`).
+Broches programmables d'un microcontrôleur. Chaque broche peut être configurée en entrée (lire un capteur) ou en sortie (allumer une LED, piloter un relais). Dans ce projet : D5 (GPIO14) est la broche de données du capteur DHT11 (configurable dans `config.h`), D6/D7 pilotent les LEDs d'état.
 
 ---
 
@@ -193,7 +190,7 @@ const prisma = new PrismaClient({ adapter });
 ```
 
 **Pull-up (résistance)**
-Résistance placée entre la broche de données d'un capteur et l'alimentation (VCC). Elle force le signal à l'état haut (1) quand aucun appareil ne tire le signal vers le bas. Requise par le protocole du DHT22 : sans elle, la ligne reste flottante et les lectures sont aléatoires. Valeur standard : 10 kΩ.
+Résistance placée entre la broche de données d'un capteur et l'alimentation (VCC). Elle force le signal à l'état haut (1) quand aucun appareil ne tire le signal vers le bas. Requise par le protocole du DHT11 : sans elle, la ligne reste flottante et les lectures sont invalides (NaN). Valeur standard : 10 kΩ (le module DHT11 3 broches l'intègre ; le capteur nu 4 broches exige une résistance externe).
 
 **Prisma Studio**
 Interface web fournie par Prisma pour visualiser et modifier les données de la base de données. Utile en développement et en démo.
