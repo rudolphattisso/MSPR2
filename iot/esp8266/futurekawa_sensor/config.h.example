@@ -2,19 +2,42 @@
 
 // ============================================================
 // CONFIGURATION — copier ce fichier en config.h et remplir
+// (config.h est gitignore : ne jamais commiter tes credentials)
 // ============================================================
+//
+// ------------------------------------------------------------
+// SCHÉMA DE CÂBLAGE — NodeMCU ESP8266 (OSOYOO)
+// ------------------------------------------------------------
+//
+//   DHT11 (capteur nu 4 broches, grille face à soi, pattes en bas) :
+//
+//     [ VCC ] [ DATA ] [ NC ] [ GND ]
+//        │        │              │
+//       3V3      D5             GND
+//        └──[ 10 kΩ ]──┘                 <- pull-up OBLIGATOIRE
+//         (entre VCC et DATA)               (capteur nu 4 broches)
+//
+//   > Module DHT11 3 broches (sur petite carte) : pull-up intégré,
+//     PAS de résistance externe. Brancher S→D5, milieu(VCC)→3V3, GND→GND.
+//
+//   LEDs d'état (chacune via une résistance ~220-330 Ω vers GND) :
+//     LED verte (OK)     → D6
+//     LED rouge (alerte) → D7
+//
+//   Board Arduino IDE : "NodeMCU 1.0 (ESP-12E Module)" — 115200 baud
+//   Bibliothèques : PubSubClient (Nick O'Leary), DHT sensor library (Adafruit)
+// ------------------------------------------------------------
 
-// WiFi
-#define WIFI_SSID       "Futurekawa_26"           // hotspot laptop — SSID fixe
+// WiFi (2,4 GHz uniquement — l'ESP8266 ne voit pas le 5 GHz)
+#define WIFI_SSID       "MonReseau_2G"
 #define WIFI_PASSWORD   "ton_mot_de_passe"
 
-// Broker MQTT — IP fixe du laptop quand Windows Mobile Hotspot est actif
-#define MQTT_BROKER     "192.168.137.1"
+// Broker MQTT — IP de la machine qui héberge Mosquitto (Docker)
+// (doit être sur le MÊME réseau que l'ESP ; ouvrir le port 1883 au pare-feu)
+#define MQTT_BROKER     "192.168.1.32"
 #define MQTT_PORT       1883
 #define MQTT_CLIENT_ID  "esp8266-br-wh001"  // unique par appareil
-
-// Topic de publication (ne pas modifier)
-#define MQTT_TOPIC      "futurekawa/mesure"
+#define MQTT_TOPIC      "futurekawa/mesure" // ne pas modifier
 
 // Identifiant de l'entrepôt surveillé par cet appareil
 // Brésil     : "00000000-0000-0000-0000-000000000001"
@@ -31,10 +54,25 @@
 
 // Capteur actif : décommenter UNE seule ligne
 #define SENSOR_DHT11          // DHT11 sur pin D5 (GPIO14) — kit OSOYOO
-// #define SENSOR_DHT22       // variante DHT22 (plus précis)
-// #define SENSOR_SHT31       // capteur SHT31 via I2C
 // #define SENSOR_SIMULATION  // simulation logicielle (pas de capteur physique)
 
-// Broche du capteur — utiliser les constantes NodeMCU (D0–D8)
+// Broche de données du capteur — constantes NodeMCU (D0–D8)
 // D5 = GPIO14 : safe, évite les pins de boot (D3/D4/D8)
 #define SENSOR_PIN  D5
+
+// ============================================================
+// SEUILS MÉTIER — consigne + tolérance (pilotent les LEDs)
+// Valeurs Brésil par défaut (cf. CLAUDE.md) — adapter selon le pays
+//   Brésil 29°C ±3 / 55% ±2 · Équateur 31°C ±3 / 60% ±2 · Colombie 26°C ±3 / 80% ±2
+// ============================================================
+#define TARGET_TEMP_C     29.0   // consigne température (°C)
+#define TARGET_HUM_PCT    55.0   // consigne humidité (%)
+#define TOLERANCE_TEMP_C  3.0    // tolérance ±°C
+#define TOLERANCE_HUM_PCT 2.0    // tolérance ±%
+
+// ============================================================
+// LEDs D'ÉTAT
+// ============================================================
+#define LED_OK_PIN     D6    // verte : mesure dans la tolérance (fixe)
+#define LED_ALERT_PIN  D7    // rouge : mesure hors tolérance (clignote)
+#define LED_BLINK_MS   400   // période de clignotement de la rouge (ms)
