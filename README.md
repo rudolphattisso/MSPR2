@@ -62,6 +62,14 @@ doc/            → ADRs, journal de session, glossaire
 | Backend pays (API) | build `./backend-pays` | 3001 |
 | App siège (UI + agrégation) | build `./app-siege` | 3000 |
 
+> **Test IoT matériel (ESP8266) via hotspot smartphone** — pour qu'un capteur
+> réel joigne le broker MQTT, ouvrir le port 1883 dans le pare-feu Windows
+> (**PowerShell admin**) :
+> ```powershell
+> New-NetFirewallRule -DisplayName "Mosquitto MQTT 1883" -Direction Inbound -Protocol TCP -LocalPort 1883 -Action Allow
+> ```
+> Détail complet (hotspot 2,4 GHz, IP du broker, dépannage) : [`iot/README.md`](iot/README.md#réseau--hotspot-smartphone-24-ghz--pare-feu).
+
 ```bash
 # Démarrer
 docker compose up -d

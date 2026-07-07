@@ -130,6 +130,49 @@ Ouvrir `iot/esp8266/config.h` et modifier :
 5. Cliquer `Téléverser` (flèche →)
 6. Ouvrir **Outils → Moniteur Série** à **115200 baud** pour voir les logs
 
+### Réseau — hotspot smartphone (2,4 GHz) + pare-feu
+
+> ⚠️ L'ESP8266 est **2,4 GHz uniquement**. Il ne verra jamais un réseau émis
+> en 5 GHz (ni le Mobile Hotspot Windows quand la carte WiFi du PC est déjà
+> connectée à du 5 GHz : avec une seule carte, le hotspot suit la bande montante).
+
+**Montage recommandé : partage de connexion du smartphone.**
+
+1. **Forcer le hotspot en 2,4 GHz**
+   - iPhone : Réglages → Partage de connexion → **« Maximiser la compatibilité » = ON**
+   - Android : Point d'accès → Bande AP → **2,4 GHz**
+   - iPhone : garder l'écran *Partage de connexion* ouvert + téléphone **branché** (évite la mise en veille du hotspot)
+2. **Connecter le PC au hotspot** (le PC héberge le broker Mosquitto ; PC + ESP
+   doivent être sur le **même** réseau). Sur iPhone, le PC obtient une IP `172.20.10.x`.
+3. **Empêcher le PC de rebasculer sur un réseau connu** (ex. WiFi école) :
+   ```powershell
+   netsh wlan set profileparameter name="NOM_DU_RESEAU" connectionmode=manual
+   ```
+4. **Relever l'IP du PC** (carte Wi-Fi) et la reporter dans `config.h` → `MQTT_BROKER` :
+   ```powershell
+   ipconfig    # ligne « Carte réseau sans fil Wi-Fi » → Adresse IPv4
+   ```
+5. **Ouvrir le port MQTT dans le pare-feu Windows** (bloqué par défaut → sinon
+   l'ESP se connecte au WiFi mais le MQTT échoue avec `rc=-2`).
+   **PowerShell en administrateur :**
+   ```powershell
+   New-NetFirewallRule -DisplayName "Mosquitto MQTT 1883" -Direction Inbound -Protocol TCP -LocalPort 1883 -Action Allow
+   ```
+
+**Lecture du moniteur série (attendu) :**
+```
+[DEBUG] SSID cible "..." VISIBLE par l'ESP
+Connecté, IP = 172.20.10.2
+Connexion MQTT à 172.20.10.13:1883 ... OK
+Publié → futurekawa/mesure : {"warehouseId":...}
+```
+
+| Symptôme série | Cause | Correctif |
+|---|---|---|
+| `NO_SSID_AVAIL` + SSID `INTROUVABLE` au scan | hotspot en 5 GHz | forcer 2,4 GHz (étape 1) |
+| `Connecté` puis MQTT `rc=-2` | pare-feu 1883 fermé **ou** PC pas sur le même réseau | règle pare-feu (étape 5) + `ipconfig` (étape 4) |
+| Réseau école : ESP connecté mais MQTT KO | isolation client / WPA2-Enterprise | utiliser un hotspot smartphone, pas le WiFi école |
+
 ---
 
 ## Vérification end-to-end
