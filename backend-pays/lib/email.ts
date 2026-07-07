@@ -44,3 +44,19 @@ export async function sendVerificationEmail(to: string, token: string) {
       </div>`,
   })
 }
+
+export async function sendAlertEmail(
+  to: string,
+  alert: { lotReference: string; type: string; message: string }
+) {
+  await transport.sendMail({
+    from: FROM,
+    to,
+    subject: `[FutureKawa] Alerte : ${alert.type}`,
+    text:
+      `Une alerte a été levée pour le lot ${alert.lotReference}.\n\n` +
+      `Type : ${alert.type}\n` +
+      `Détail : ${alert.message}\n\n` +
+      `Consultez le tableau de bord FutureKawa pour agir.`,
+  })
+}
