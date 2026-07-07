@@ -39,6 +39,8 @@ pipeline {
         stage('Base de test') {
             steps {
                 // Base Postgres dédiée aux tests (port 5433), isolée des données de démo.
+                // Nettoyage préalable : évite un conflit si un conteneur de test traîne.
+                sh 'docker rm -f futurekawa-db-test 2>/dev/null || true'
                 sh 'docker compose up -d db-test'
                 sh '''
                   for i in $(seq 1 30); do
@@ -76,8 +78,9 @@ pipeline {
 
     post {
         always {
-            // Libère la base de test et publie les rapports de couverture (preuve d'exécution).
-            sh 'docker compose stop db-test || true'
+            // Supprime la base de test (pas juste stop → évite les conflits de nom au prochain run)
+            // et publie les rapports de couverture (preuve d'exécution).
+            sh 'docker rm -f futurekawa-db-test 2>/dev/null || true'
             archiveArtifacts artifacts: 'backend-pays/coverage/**, app-siege/coverage/**', allowEmptyArchive: true
         }
         success {
