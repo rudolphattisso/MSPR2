@@ -573,3 +573,75 @@
 - [ ] Écrire les tests unitaires et de mutation pour `app-siege` (lib/backend.ts, lib/auth-guards.ts, proxy.ts)
 - [ ] Mettre à jour le `Jenkinsfile` avec les commandes de test finalisées
 
+---
+
+## Session 016 — 2026-07-07
+
+### Contexte
+- Branche `feat/iot2` — reprise de la partie IoT (test matériel réel ESP8266 + DHT11 + LEDs).
+- Nouveau sketch de test `iot/esp8266/futurekawa_sensor_test/` (variante du firmware avec 2 LEDs
+  d'état verte/rouge + logique de tolérance), **non commité (untracked)**.
+
+### Ce qui a été fait
+- **Vérification complète du sketch de test** `futurekawa_sensor_test.ino` + son `config.h` :
+  tous les `#define` requis présents (LED_OK_PIN=D6, LED_ALERT_PIN=D7, LED_BLINK_MS, TARGET/TOLERANCE), pins sans conflit (DHT=D5).
+- **Bug bloquant trouvé et corrigé** : le payload MQTT envoyait `warehouse_id` (snake_case),
+  incompatible avec les consommateurs qui attendent `warehouseId` (camelCase) —
+  `mqtt-worker.ts:18` (mesure jamais insérée) et `flows.json` nœud « Vérifier seuils » (aucune alerte).
+  → correction `warehouse_id` → `warehouseId` dans le `snprintf` du `.ino`.
+- **Blocage flash CH340 résolu** (traînait depuis sessions 010/011, faussement attribué à Windows 11) :
+  vraie cause = driver CH340 trop récent → **rollback vers la version 2014** → upload OK sur Windows 11.
+  Windows 10 n'est PAS requis. (Noté en mémoire projet.)
+- **Flash réussi** (Phase E OK) + moniteur série 115200 : le firmware tourne.
+- **WiFi ne se connecte pas** : points à l'infini dans `setupWifi()`.
+  Cause identifiée : **Point d'accès mobile Windows en 5 GHz**, or l'ESP8266 est **2,4 GHz uniquement**.
+  → bande basculée en 2,4 GHz. Toujours bloqué après reset → diagnostic en cours.
+
+### Fichiers modifiés
+- `iot/esp8266/futurekawa_sensor_test/futurekawa_sensor_test.ino` (payload `warehouse_id` → `warehouseId`) — untracked
+- `iot/esp8266/futurekawa_sensor_test/config.h` (recréé par le user, gitignore)
+- Mémoire Claude : `memory/project_ch340_driver_fix.md` (nouveau) + `memory/MEMORY.md`
+
+### Décisions clés actées
+- Le firmware de test réutilise le contrat MQTT camelCase (`warehouseId`) — jamais snake_case, malgré ce que dit la spec matériel fournie.
+- Fix CH340 = rollback driver 2014, réutilisable si le port COM disparaît.
+- ESP8266 = 2,4 GHz strict → le hotspot Windows doit être forcé en 2,4 GHz.
+
+### Résolution — chaîne IoT validée de bout en bout ✓
+- **Patch debug WiFi** ajouté à `setupWifi()` : `scanNetworks()` au boot (liste SSID/RSSI/canal +
+  signale si le SSID cible est VISIBLE/INTROUVABLE), `WiFi.status()` traduit en clair, timeout 20 s.
+- **Diagnostic bande** : scan répété → l'ESP voit 12-18 réseaux (canaux 1/3/6/11) mais **jamais le
+  hotspot Windows**. Cause confirmée : **une seule carte WiFi sur le PC** → le Mobile Hotspot suit la
+  bande de la connexion montante (5 GHz `ASUS_E0_5G`), donc invisible pour l'ESP (2,4 GHz strict).
+  Le réglage « bande 2,4 GHz » de Windows est **ignoré** dans ce cas.
+- **Bascule sur hotspot smartphone (iPhone)** : « Maximiser la compatibilité » = ON (force 2,4 GHz).
+  → l'ESP voit enfin `iPhone de Rudolph` (`VISIBLE`) et se connecte (`IP = 172.20.10.2`). **WiFi OK.**
+- **MQTT échouait (`rc=-2`)** malgré WiFi OK. Deux causes cumulées, résolues :
+  1. Le PC rebasculait automatiquement sur le WiFi école (EPSI) → PC et ESP sur des réseaux différents.
+     Fix : `netsh wlan set profileparameter name="EPSI"/"COMDEV-PEDAGO" connectionmode=manual`.
+  2. **Pare-feu Windows bloquait le port 1883** (broker Docker publié sur `0.0.0.0:1883`, mais entrant refusé).
+     Fix : `New-NetFirewallRule ... -LocalPort 1883 -Action Allow` (PowerShell admin).
+- **Résultat** : `Connexion MQTT à 172.20.10.13:1883 ... OK` + `Publié → futurekawa/mesure`. ✅
+- **Docs mises à jour** : `iot/README.md` (nouvelle section « Réseau — hotspot smartphone 2,4 GHz + pare-feu »
+  avec tableau de dépannage) et `README.md` (note + commande pare-feu sous les services Docker).
+
+### Fichiers modifiés (suite)
+- `iot/esp8266/futurekawa_sensor_test/futurekawa_sensor_test.ino` (patch debug `setupWifi`) — untracked
+- `iot/esp8266/futurekawa_sensor_test/config.h` (SSID/mdp iPhone + `MQTT_BROKER=172.20.10.13`) — gitignore
+- `iot/README.md`, `README.md` (doc réseau + pare-feu)
+
+### Décisions clés (suite)
+- **Test matériel = hotspot smartphone en 2,4 GHz, pas le Mobile Hotspot Windows** (carte WiFi unique)
+  ni le WiFi école (isolation client + WPA2-Enterprise probable → broker jamais joignable).
+- **Ouverture pare-feu 1883 obligatoire** pour tout test capteur réel → broker local. Documenté.
+
+### Prochain démarrage
+**Bloc 5 IoT — TERMINÉ ✓ (matériel réel validé E2E : ESP8266 → WiFi → MQTT → Mosquitto)**
+1. **Commiter** le sketch de test + la doc réseau (voir messages de commit proposés en fin de session).
+2. Optionnel : retirer le patch debug verbeux de `setupWifi()` une fois le montage stable
+   (ou le garder derrière un `#define DEBUG_WIFI`).
+3. Reprendre le **Bloc 9 — Tests (consolidation)** : Vitest + Stryker sur `app-siege`
+   (lib/backend.ts, lib/auth-guards.ts, proxy.ts) + finaliser le `Jenkinsfile`.
+
+**Mode de test actif : GUIDÉ** (test matériel — l'utilisateur exécute, Claude analyse)
+
