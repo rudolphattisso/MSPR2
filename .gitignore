@@ -26,6 +26,7 @@ mosquitto/log/
 
 # IoT — credentials locaux (ne jamais commiter)
 iot/esp8266/futurekawa_sensor/config.h
+iot/esp8266/futurekawa_sensor_test/config.h
 
 # OS
 .DS_Store
