@@ -97,29 +97,33 @@ python simulate_sensor.py --country EC --scenario hors-seuil --count 5 --interva
 3. **Outils → Type de carte** → `NodeMCU 1.0 (ESP-12E Module)`
 4. **Outils → Port** → le port COM apparu après branchement USB
 
-### Câblage DHT11 sur NodeMCU
+### Câblage sur breadboard (DHT11 + LEDs de statut)
+
+Tout le montage passe par les rails d'alimentation de la breadboard (pas de câblage direct sur le DHT11 ni les LEDs).
 
 ```
-DHT11          NodeMCU
-VCC     →      3.3V
-GND     →      GND
-DATA    →      D5  (GPIO14)
-               résistance 10kΩ entre DATA et 3.3V (pull-up — incluse dans le kit)
+Alimentation (rails breadboard)
+  NodeMCU 3.3V   →   rail (+)
+  NodeMCU GND    →   rail (-)
+
+DHT11 (module 4 broches)
+  Pin 1 VCC    →   rail (+)
+  Pin 2 DATA   →   D5 (GPIO14) NodeMCU
+                    + résistance pull-up 10kΩ entre DATA et rail (+)
+  Pin 3 NC     →   non connectée
+  Pin 4 GND    →   rail (-)
+
+LEDs de statut
+  NodeMCU D7   →   résistance 220Ω   →   Anode LED rouge
+  NodeMCU D6   →   résistance 220Ω   →   Anode LED verte
+                    Cathode LED rouge  →  rail (-)
+                    Cathode LED verte  →  rail (-)
 ```
 
-> Éviter D3, D4, D8 : pins de boot sensibles. D5 est le choix sûr.
+> Éviter D3, D4, D8 : pins de boot sensibles. D5 (DHT11), D6, D7 (LEDs) sont libres et sûrs.
 
-### Configuration avant flash
+**Schéma visuel (breadboard) :** [`iot/docs/cablage-breadboard.png`](docs/cablage-breadboard.svg)
 
-Ouvrir `iot/esp8266/config.h` et modifier :
-
-```c
-#define WIFI_SSID       "ton_reseau"
-#define WIFI_PASSWORD   "ton_mdp"
-#define MQTT_BROKER     "192.168.x.x"   // IP de la machine Docker
-#define WAREHOUSE_ID    "00000000-..."  // UUID de l'entrepôt (voir seeds)
-// SENSOR_DHT11 est actif par défaut — ne pas modifier
-```
 
 ### Flasher
 
