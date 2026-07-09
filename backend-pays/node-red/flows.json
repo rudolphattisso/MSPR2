@@ -47,7 +47,7 @@
     "type": "function",
     "z": "tab_alerting",
     "name": "Vérifier seuils",
-    "func": "const { warehouseId, temperature, humidity } = msg.payload;\n\nconst THRESHOLDS = {\n  \"00000000-0000-0000-0000-000000000001\": { countryName: \"Brésil\", idealTemp: 29, tempTolerance: 3, idealHumidity: 55, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000002\": { countryName: \"Équateur\", idealTemp: 31, tempTolerance: 3, idealHumidity: 60, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000003\": { countryName: \"Colombie\", idealTemp: 26, tempTolerance: 3, idealHumidity: 80, humidityTolerance: 2 }\n};\n\nconst config = THRESHOLDS[warehouseId];\nif (!config) {\n  node.warn(\"Entrepôt inconnu : \" + warehouseId);\n  return null;\n}\n\nconst alerts = [];\nconst tempMin = config.idealTemp - config.tempTolerance;\nconst tempMax = config.idealTemp + config.tempTolerance;\nif (temperature < tempMin || temperature > tempMax) {\n  alerts.push({ type: \"SEUIL_TEMPERATURE\", message: \"Température \" + temperature + \"°C hors seuil [\" + tempMin + \"–\" + tempMax + \"°C] - \" + config.countryName });\n}\n\nconst humMin = config.idealHumidity - config.humidityTolerance;\nconst humMax = config.idealHumidity + config.humidityTolerance;\nif (humidity < humMin || humidity > humMax) {\n  alerts.push({ type: \"SEUIL_HUMIDITE\", message: \"Humidité \" + humidity + \"% hors seuil [\" + humMin + \"–\" + humMax + \"%] - \" + config.countryName });\n}\n\nif (alerts.length === 0) { return null; }\n\nmsg.warehouseId = warehouseId;\nmsg.alertTypes = alerts;\nreturn msg;",
+    "func": "const { warehouseId, temperature, humidity } = msg.payload;\n\nconst THRESHOLDS = {\n  \"00000000-0000-0000-0000-000000000001\": { countryName: \"Brésil\", idealTemp: 29, tempTolerance: 3, idealHumidity: 55, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000004\": { countryName: \"Brésil\", idealTemp: 29, tempTolerance: 3, idealHumidity: 55, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000002\": { countryName: \"Équateur\", idealTemp: 31, tempTolerance: 3, idealHumidity: 60, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000005\": { countryName: \"Équateur\", idealTemp: 31, tempTolerance: 3, idealHumidity: 60, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000003\": { countryName: \"Colombie\", idealTemp: 26, tempTolerance: 3, idealHumidity: 80, humidityTolerance: 2 },\n  \"00000000-0000-0000-0000-000000000006\": { countryName: \"Colombie\", idealTemp: 26, tempTolerance: 3, idealHumidity: 80, humidityTolerance: 2 }\n};\n\nconst config = THRESHOLDS[warehouseId];\nif (!config) {\n  node.warn(\"Entrepôt inconnu : \" + warehouseId);\n  return null;\n}\n\nconst alerts = [];\nconst tempMin = config.idealTemp - config.tempTolerance;\nconst tempMax = config.idealTemp + config.tempTolerance;\nif (temperature < tempMin || temperature > tempMax) {\n  alerts.push({ type: \"SEUIL_TEMPERATURE\", message: \"Température \" + temperature + \"°C hors seuil [\" + tempMin + \"–\" + tempMax + \"°C] - \" + config.countryName });\n}\n\nconst humMin = config.idealHumidity - config.humidityTolerance;\nconst humMax = config.idealHumidity + config.humidityTolerance;\nif (humidity < humMin || humidity > humMax) {\n  alerts.push({ type: \"SEUIL_HUMIDITE\", message: \"Humidité \" + humidity + \"% hors seuil [\" + humMin + \"–\" + humMax + \"%] - \" + config.countryName });\n}\n\nif (alerts.length === 0) { return null; }\n\nmsg.warehouseId = warehouseId;\nmsg.alertTypes = alerts;\nreturn msg;",
     "outputs": 1,
     "noerr": 0,
     "initialize": "",
@@ -155,38 +155,8 @@
     "headers": [],
     "x": 1420,
     "y": 80,
-    "wires": [["n09_prepare_email"]]
+    "wires": [[]]
   },
-  {
-    "id": "n09_prepare_email",
-    "type": "function",
-    "z": "tab_alerting",
-    "name": "Préparer email",
-    "func": "const alertInfo = msg.alertInfo;\nmsg.to = env.get('ALERT_EMAIL_TO') || '';\nmsg.topic = '[FutureKawa] Alerte : ' + alertInfo.type;\nmsg.payload = 'Alerte détectée pour le lot ' + alertInfo.lotReference + '\\n\\nType : ' + alertInfo.type + '\\nDétail : ' + alertInfo.message + '\\n\\nVérifiez le tableau de bord FutureKawa.';\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 1600,
-    "y": 80,
-    "wires": [["n10_send_email"]]
-  },
-  {
-    "id": "n10_send_email",
-    "type": "e-mail",
-    "z": "tab_alerting",
-    "name": "Envoyer email alerte",
-    "server": "${SMTP_HOST}",
-    "port": "${SMTP_PORT}",
-    "secure": false,
-    "tls": true,
-    "dname": "",
-    "x": 1790,
-    "y": 80,
-    "wires": []
-  },
-
   {
     "id": "n11_cron",
     "type": "inject",
@@ -302,35 +272,6 @@
     "headers": [],
     "x": 1280,
     "y": 280,
-    "wires": [["n18_prepare_expiry_email"]]
-  },
-  {
-    "id": "n18_prepare_expiry_email",
-    "type": "function",
-    "z": "tab_alerting",
-    "name": "Préparer email péremption",
-    "func": "const alertInfo = msg.alertInfo;\nmsg.to = env.get('ALERT_EMAIL_TO') || '';\nmsg.topic = '[FutureKawa] Lot périmé : ' + alertInfo.lotReference;\nmsg.payload = 'Alerte de péremption pour le lot ' + alertInfo.lotReference + '\\n\\n' + alertInfo.message + '\\n\\nVérifiez le tableau de bord FutureKawa.';\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 1480,
-    "y": 280,
-    "wires": [["n19_send_expiry_email"]]
-  },
-  {
-    "id": "n19_send_expiry_email",
-    "type": "e-mail",
-    "z": "tab_alerting",
-    "name": "Envoyer email péremption",
-    "server": "${SMTP_HOST}",
-    "port": "${SMTP_PORT}",
-    "secure": false,
-    "tls": true,
-    "dname": "",
-    "x": 1680,
-    "y": 280,
-    "wires": []
+    "wires": [[]]
   }
 ]
