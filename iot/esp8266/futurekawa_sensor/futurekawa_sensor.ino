@@ -1,175 +1,232 @@
-/*
- * FutureKawa — Firmware capteur IoT (NodeMCU ESP8266)
- *
- * Lit température + humidité et publie sur MQTT toutes les N secondes.
- * Topic  : futurekawa/mesure
- * Payload: {"warehouseId":"<uuid>","temperature":29.4,"humidity":54.8}
- *
- * Matériel : NodeMCU v2/v3 (ESP8266) + DHT11 sur D5
- *            Kit OSOYOO NodeMCU IoT Kit
- *
- * Câblage DHT11 :
- *   VCC  → 3.3V
- *   GND  → GND
- *   DATA → D5  (+ résistance pull-up 10kΩ entre DATA et 3.3V)
- *
- * Bibliothèques Arduino requises (Gestionnaire de bibliothèques) :
- *   - PubSubClient        (Nick O'Leary)   — client MQTT
- *   - DHT sensor library  (Adafruit)       — si SENSOR_DHT11 ou SENSOR_DHT22
- *   - Adafruit SHT31 Library               — si SENSOR_SHT31
- *   - ArduinoJson         (Benoit Blanchon)
- *
- * Board Arduino IDE : "NodeMCU 1.0 (ESP-12E Module)"
- *
- * Adaptations selon matériel :
- *   1. Modifier config.h : SENSOR_*, SENSOR_PIN, WAREHOUSE_ID, MQTT_BROKER, WiFi
- *   2. Si nouveau type de capteur → ajouter un bloc #ifdef ci-dessous
- *   3. Recompiler et flasher — le reste du code ne change pas
- */
+// ============================================================
+// FUTUREKAWA — Surveillance IoT température / humidité par entrepôt
+// NodeMCU ESP8266 (OSOYOO) + DHT11 + LED verte (OK) + LED rouge (alerte)
+// Publie les relevés sur un broker MQTT local, format JSON.
+//
+// Câblage DHT11 (4 broches) : VCC → 3V3, DATA → D5, GND → GND
+//   + résistance pull-up 10 kΩ entre DATA et VCC (obligatoire capteur nu)
+// LEDs : verte → D6, rouge → D7
+// Board Arduino IDE : "NodeMCU 1.0 (ESP-12E Module)"
+// Bibliothèques : PubSubClient (Nick O'Leary), DHT sensor library (Adafruit)
+// ============================================================
 
-#include <ESP8266WiFi.h>   // ESP8266 — remplace <WiFi.h> de l'ESP32
+#include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <ArduinoJson.h>
+#include <DHT.h>
 #include "config.h"
 
-// ── Inclusion conditionnelle selon le capteur configuré ──────────────────────
-
-#ifdef SENSOR_DHT22
-  #include <DHT.h>
-  DHT dht(SENSOR_PIN, DHT22);
-#endif
-
-#ifdef SENSOR_DHT11
-  #include <DHT.h>
+// ---- Capteur DHT11 (cf. config.h) --------------------------
+#if defined(SENSOR_DHT11)
   DHT dht(SENSOR_PIN, DHT11);
 #endif
 
-#ifdef SENSOR_SHT31
-  #include <Adafruit_SHT31.h>
-  Adafruit_SHT31 sht31;
-#endif
-
-// ── Variables globales ────────────────────────────────────────────────────────
-
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
-unsigned long lastMeasureAt = 0;
 
-// ── Lecture capteur — adapter ici si nouveau matériel ────────────────────────
+// ---- Ordonnancement non-bloquant --------------------------
+unsigned long lastMeasure = 0;
+unsigned long lastBlink   = 0;
+bool          alertState  = false;   // dernière mesure hors tolérance ?
+bool          blinkOn     = false;   // état courant de la LED rouge
 
-float readTemperature() {
-#ifdef SENSOR_DHT22
-  return dht.readTemperature();
-#elif defined(SENSOR_DHT11)
-  return dht.readTemperature();
-#elif defined(SENSOR_SHT31)
-  return sht31.readTemperature();
-#elif defined(SENSOR_SIMULATION)
-  return 29.0 + (random(-40, 40) / 10.0);
-#else
-  return NAN;
-#endif
-}
+// ============================================================
+// WiFi
+// ============================================================
 
-float readHumidity() {
-#ifdef SENSOR_DHT22
-  return dht.readHumidity();
-#elif defined(SENSOR_DHT11)
-  return dht.readHumidity();
-#elif defined(SENSOR_SHT31)
-  return sht31.readHumidity();
-#elif defined(SENSOR_SIMULATION)
-  return 55.0 + (random(-50, 50) / 10.0);
-#else
-  return NAN;
-#endif
-}
-
-// ── WiFi ──────────────────────────────────────────────────────────────────────
-
-void connectWifi() {
-  Serial.printf("[WiFi] Connexion à %s", WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+// [DEBUG] Traduit le code WiFi.status() en texte lisible
+const char* wifiStatusStr(int s) {
+  switch (s) {
+    case WL_IDLE_STATUS:   return "IDLE (0)";
+    case WL_NO_SSID_AVAIL: return "NO_SSID_AVAIL (1) — SSID introuvable";
+    case WL_SCAN_COMPLETED:return "SCAN_COMPLETED (2)";
+    case WL_CONNECTED:     return "CONNECTED (3)";
+    case WL_CONNECT_FAILED:return "CONNECT_FAILED (4) — mot de passe refusé ?";
+    case WL_CONNECTION_LOST:return "CONNECTION_LOST (5)";
+    case WL_DISCONNECTED:  return "DISCONNECTED (6)";
+    default:               return "INCONNU";
   }
-  Serial.printf("\n[WiFi] Connecté — IP : %s\n", WiFi.localIP().toString().c_str());
 }
 
-// ── MQTT ──────────────────────────────────────────────────────────────────────
+// [DEBUG] Liste les réseaux 2,4 GHz vus par l'ESP8266
+void scanWifi() {
+  Serial.println("\n[DEBUG] Scan des réseaux WiFi...");
+  int n = WiFi.scanNetworks();
+  if (n == 0) {
+    Serial.println("[DEBUG] Aucun réseau détecté !");
+    return;
+  }
+  Serial.printf("[DEBUG] %d réseau(x) trouvé(s) :\n", n);
+  bool cible = false;
+  for (int i = 0; i < n; i++) {
+    bool match = (WiFi.SSID(i) == WIFI_SSID);
+    if (match) cible = true;
+    Serial.printf("  %2d) %-24s  RSSI=%4d dBm  ch=%2d  %s%s\n",
+      i + 1, WiFi.SSID(i).c_str(), WiFi.RSSI(i), WiFi.channel(i),
+      (WiFi.encryptionType(i) == ENC_TYPE_NONE) ? "ouvert" : "protégé",
+      match ? "  <== CIBLE" : "");
+  }
+  Serial.printf("[DEBUG] SSID cible \"%s\" %s\n\n",
+    WIFI_SSID, cible ? "VISIBLE par l'ESP" : "INTROUVABLE (bande/canal ?)");
+  WiFi.scanDelete();
+}
 
-void connectMqtt() {
+void setupWifi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();          // repart d'un état propre
+  delay(100);
+
+  scanWifi();                 // [DEBUG] que voit réellement l'ESP ?
+
+  Serial.printf("Connexion WiFi à %s\n", WIFI_SSID);
+  while (WiFi.status() != WL_CONNECTED) {
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    unsigned long start = millis();
+    // Tentative de 20 s max en affichant le code d'état
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
+      delay(1000);
+      Serial.printf("  ... status=%s\n", wifiStatusStr(WiFi.status()));
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("[DEBUG] Timeout 20 s — nouveau scan + réessai");
+      scanWifi();
+    }
+  }
+  Serial.printf("\nConnecté, IP = %s\n", WiFi.localIP().toString().c_str());
+}
+
+// ============================================================
+// MQTT — (re)connexion
+// ============================================================
+void reconnectMqtt() {
   while (!mqtt.connected()) {
-    Serial.printf("[MQTT] Connexion à %s:%d...", MQTT_BROKER, MQTT_PORT);
+    Serial.printf("Connexion MQTT à %s:%d ... ", MQTT_BROKER, MQTT_PORT);
     if (mqtt.connect(MQTT_CLIENT_ID)) {
-      Serial.println(" OK");
+      Serial.println("OK");
     } else {
-      Serial.printf(" Échec (état=%d) — retry dans 5s\n", mqtt.state());
-      delay(5000);
+      Serial.printf("échec (rc=%d), nouvel essai dans 2 s\n", mqtt.state());
+      delay(2000);
     }
   }
 }
 
-void publishMeasure(float temperature, float humidity) {
-  StaticJsonDocument<128> doc;
-  doc["warehouseId"] = WAREHOUSE_ID;
-  doc["temperature"] = serialized(String(temperature, 1));
-  doc["humidity"]    = serialized(String(humidity, 1));
-
-  char payload[128];
-  serializeJson(doc, payload);
-
-  bool ok = mqtt.publish(MQTT_TOPIC, payload, /*retain=*/false);
-  Serial.printf("[MQTT] %s → %s  [%s]\n",
-    MQTT_TOPIC, payload, ok ? "OK" : "ÉCHEC");
+// ============================================================
+// Lecture capteur — renvoie true si lecture valide
+// ============================================================
+bool readSensor(float &temp, float &hum) {
+#if defined(SENSOR_SIMULATION)
+  // Bruite légèrement autour de la consigne pour tester la logique
+  temp = TARGET_TEMP_C + random(-500, 500) / 100.0;
+  hum  = TARGET_HUM_PCT + random(-400, 400) / 100.0;
+  return true;
+#else
+  hum  = dht.readHumidity();
+  temp = dht.readTemperature();
+  if (isnan(hum) || isnan(temp)) {
+    Serial.println("Erreur : lecture DHT invalide");
+    return false;
+  }
+  return true;
+#endif
 }
 
-// ── Setup / Loop ──────────────────────────────────────────────────────────────
+// ============================================================
+// Évaluation des seuils — true si DANS la tolérance
+// ============================================================
+bool isWithinTolerance(float temp, float hum) {
+  bool tempOk = fabs(temp - TARGET_TEMP_C) <= TOLERANCE_TEMP_C;
+  bool humOk  = fabs(hum  - TARGET_HUM_PCT) <= TOLERANCE_HUM_PCT;
+  return tempOk && humOk;
+}
 
+// ============================================================
+// Pilotage des LED d'état
+// ============================================================
+void applyStatusLeds(bool ok) {
+  alertState = !ok;
+  if (ok) {
+    digitalWrite(LED_OK_PIN, HIGH);     // verte fixe
+    digitalWrite(LED_ALERT_PIN, LOW);   // rouge éteinte
+    blinkOn = false;
+  } else {
+    digitalWrite(LED_OK_PIN, LOW);      // verte éteinte
+    // la rouge clignote dans updateBlink()
+  }
+}
+
+// Clignotement non-bloquant de la LED rouge
+void updateBlink() {
+  if (!alertState) return;
+  if (millis() - lastBlink >= LED_BLINK_MS) {
+    lastBlink = millis();
+    blinkOn = !blinkOn;
+    digitalWrite(LED_ALERT_PIN, blinkOn ? HIGH : LOW);
+  }
+}
+
+// ============================================================
+// Publication MQTT (JSON)
+// ============================================================
+void publishMeasure(float temp, float hum, bool ok) {
+  char payload[256];
+  snprintf(payload, sizeof(payload),
+    "{\"warehouseId\":\"%s\",\"client_id\":\"%s\","
+    "\"temperature\":%.1f,\"humidity\":%.1f,\"within_tolerance\":%s}",
+    WAREHOUSE_ID, MQTT_CLIENT_ID, temp, hum, ok ? "true" : "false");
+
+  if (mqtt.publish(MQTT_TOPIC, payload)) {
+    Serial.printf("Publié → %s : %s\n", MQTT_TOPIC, payload);
+  } else {
+    Serial.println("Erreur : publication MQTT échouée");
+  }
+}
+
+// ============================================================
+// setup
+// ============================================================
 void setup() {
   Serial.begin(115200);
-  delay(500);
-  Serial.println("\n=== FutureKawa Sensor Boot (ESP8266) ===");
+  delay(100);
 
-#ifdef SENSOR_DHT11
+  pinMode(LED_OK_PIN, OUTPUT);
+  pinMode(LED_ALERT_PIN, OUTPUT);
+  digitalWrite(LED_OK_PIN, LOW);
+  digitalWrite(LED_ALERT_PIN, LOW);
+
+#if defined(SENSOR_DHT11)
   dht.begin();
-  Serial.println("[Capteur] DHT11 initialisé sur D5");
-#elif defined(SENSOR_DHT22)
-  dht.begin();
-  Serial.println("[Capteur] DHT22 initialisé sur D5");
-#elif defined(SENSOR_SHT31)
-  if (!sht31.begin(0x44)) {
-    Serial.println("[Capteur] ERREUR : SHT31 non détecté sur I2C 0x44");
-    while (1) delay(1000);
-  }
-  Serial.println("[Capteur] SHT31 initialisé");
-#elif defined(SENSOR_SIMULATION)
+#endif
+#if defined(SENSOR_SIMULATION)
   randomSeed(analogRead(A0));
-  Serial.println("[Capteur] Mode simulation activé");
 #endif
 
-  connectWifi();
+  setupWifi();
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+
+  lastMeasure = millis() - MEASURE_INTERVAL_MS;  // 1re mesure immédiate
 }
 
+// ============================================================
+// loop
+// ============================================================
 void loop() {
-  if (WiFi.status() != WL_CONNECTED) connectWifi();
-  if (!mqtt.connected())             connectMqtt();
+  if (!mqtt.connected()) reconnectMqtt();
   mqtt.loop();
 
-  unsigned long now = millis();
-  if (now - lastMeasureAt >= MEASURE_INTERVAL_MS) {
-    lastMeasureAt = now;
+  if (millis() - lastMeasure >= MEASURE_INTERVAL_MS) {
+    lastMeasure = millis();
 
-    float temp = readTemperature();
-    float hum  = readHumidity();
-
-    if (isnan(temp) || isnan(hum)) {
-      Serial.println("[Capteur] Lecture invalide — message ignoré");
-      return;
+    float temp, hum;
+    if (readSensor(temp, hum)) {
+      bool ok = isWithinTolerance(temp, hum);
+      Serial.printf("T=%.1f°C  H=%.1f%%  → %s\n",
+                    temp, hum, ok ? "OK" : "DERIVE");
+      applyStatusLeds(ok);
+      publishMeasure(temp, hum, ok);
+    } else {
+      // Lecture ratée : on force l'état d'alerte (rouge clignotante)
+      applyStatusLeds(false);
     }
-
-    publishMeasure(temp, hum);
   }
+
+  updateBlink();   // gère le clignotement rouge sans bloquer la boucle
 }

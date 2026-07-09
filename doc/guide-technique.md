@@ -43,14 +43,14 @@ C4Context
     Person(responsable, "Responsable entrepôt", "Reçoit les alertes email")
     Person(siege, "Opérateur siège", "Consulte le tableau de bord")
 
-    System(esp32, "ESP32 + DHT22", "Mesure temp/humidité, publie via MQTT")
+    System(esp8266, "ESP8266 + DHT11", "Mesure temp/humidité, publie via MQTT")
     System(backend_pays, "backend-pays", "API locale du pays (port 3001)")
     System(app_siege, "app-siege", "UI Web + agrégation siège (port 3000)")
     System(nodered, "Node-RED", "Alerting email automatique")
     System(mosquitto, "Mosquitto", "Broker MQTT")
     SystemDb(db, "PostgreSQL + TimescaleDB", "Données métier + séries temporelles")
 
-    Rel(esp32, mosquitto, "Publie mesures", "MQTT QoS 1")
+    Rel(esp8266, mosquitto, "Publie mesures", "MQTT QoS 1")
     Rel(mosquitto, backend_pays, "Distribue mesures", "MQTT subscribe")
     Rel(mosquitto, nodered, "Distribue mesures", "MQTT subscribe")
     Rel(backend_pays, db, "Lit / écrit", "Prisma + pg")
@@ -203,7 +203,7 @@ Topic   : futurekawa/mesure
 Payload : {"warehouseId": "...", "temperature": 29.4, "humidity": 54.8}
 ```
 
-Changer de matériel (DHT11 → DHT22, ESP8266 → Raspberry Pi) = modifier le firmware uniquement. Le backend ne change pas.
+Changer de matériel (DHT11 → autre capteur, ESP8266 → Raspberry Pi) = modifier le firmware uniquement. Le backend ne change pas.
 
 ### Matériel retenu — Kit OSOYOO NodeMCU IoT Kit
 

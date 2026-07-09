@@ -19,6 +19,9 @@ Système de routage de Next.js basé sur la structure de dossiers. Les fichiers 
 
 ## B
 
+**Bande WiFi 2,4 GHz / 5 GHz**
+Deux fréquences d'émission WiFi. L'**ESP8266 ne fonctionne qu'en 2,4 GHz** — il ne voit même pas un réseau émis en 5 GHz. Le Point d'accès mobile de Windows peut être configuré en 5 GHz par défaut : il faut alors forcer la **bande réseau sur 2,4 GHz** (Paramètres → Point d'accès mobile) pour que l'ESP puisse s'y associer. Symptôme d'un mauvais réglage : le firmware boucle sur des `.` dans `setupWifi()` sans jamais afficher « Connecté » (session 016).
+
 **Bootloader mode**
 Mode de démarrage de l'ESP8266 dans lequel il attend qu'un outil extérieur (esptool) lui envoie un nouveau firmware via le port série. Activé en maintenant le bouton FLASH (IO0) enfoncé au moment du reset. Sans auto-reset fonctionnel (DTR/RTS cassés), il faut l'activer manuellement.
 
@@ -33,7 +36,7 @@ Serveur intermédiaire qui reçoit les messages publiés par les clients (ESP32)
 ## C
 
 **CH340**
-Puce USB-Serial intégrée sur la plupart des boards NodeMCU (clones bon marché). Convertit la communication USB du PC en signal série compréhensible par l'ESP8266. Nécessite un driver Windows (`CH341SER.exe`) — sans lui, le port COM apparaît avec une erreur dans le Gestionnaire de périphériques et l'upload Arduino échoue avec `PermissionError`.
+Puce USB-Serial intégrée sur la plupart des boards NodeMCU (clones bon marché). Convertit la communication USB du PC en signal série compréhensible par l'ESP8266. Nécessite un driver Windows (`CH341SER.exe`) — sans lui, le port COM apparaît avec une erreur dans le Gestionnaire de périphériques et l'upload Arduino échoue avec `PermissionError`. ⚠️ **Piège (session 016)** : une version *trop récente* du driver casse l'upload sur Windows 11 (`ERROR_GEN_FAILURE 31`) ; installer la **version 2014 du driver** rétablit le flash. Windows 10 n'est pas nécessaire.
 
 **CI/CD (Continuous Integration / Continuous Delivery)**
 Pratique d'automatisation : chaque modification de code déclenche automatiquement build, tests et packaging. Dans ce projet : Jenkins avec Jenkinsfile.
@@ -46,10 +49,7 @@ Toute application capable de publier ou de s'abonner à des topics via un broker
 ## D
 
 **DHT11**
-Capteur électronique temp/humidité, version économique du DHT22. Précision : ±2°C / ±5% humidité. Même protocole single-wire, même bibliothèque Adafruit. Utilisé dans ce projet (kit OSOYOO). Suffisant pour le prototype ; DHT22 recommandé en production.
-
-**DHT22**
-Capteur électronique mesurant température et humidité relative. Précision : ±0.5°C / ±2-5% humidité. Communique via protocole single-wire avec le microcontrôleur.
+Capteur électronique de température et d'humidité relative. Précision : ±2°C / ±5% humidité. Communique via protocole single-wire (bibliothèque Adafruit DHT). Capteur retenu pour ce projet (kit OSOYOO) — suffisant pour le prototype. Câblé sur D5 (GPIO14) avec une résistance pull-up 10 kΩ entre DATA et VCC (capteur nu 4 broches).
 
 **Docker Compose**
 Outil pour définir et lancer une stack multi-conteneurs via un fichier `docker-compose.yml`. Une commande (`docker compose up`) démarre tous les services (PostgreSQL, Mosquitto, Node-RED, Next.js apps).
@@ -94,7 +94,7 @@ Programme visuel composé de nœuds connectés représentant un traitement de do
 ## G
 
 **GPIO (General Purpose Input/Output)**
-Broches programmables d'un microcontrôleur (ESP32 : 30+ broches). Chaque broche peut être configurée en entrée (lire un capteur) ou en sortie (allumer une LED, piloter un relais). Dans ce projet : GPIO 4 est la broche de données du capteur DHT22 par défaut (configurable dans `config.h`).
+Broches programmables d'un microcontrôleur. Chaque broche peut être configurée en entrée (lire un capteur) ou en sortie (allumer une LED, piloter un relais). Dans ce projet : D5 (GPIO14) est la broche de données du capteur DHT11 (configurable dans `config.h`), D6/D7 pilotent les LEDs d'état.
 
 ---
 
@@ -190,7 +190,7 @@ const prisma = new PrismaClient({ adapter });
 ```
 
 **Pull-up (résistance)**
-Résistance placée entre la broche de données d'un capteur et l'alimentation (VCC). Elle force le signal à l'état haut (1) quand aucun appareil ne tire le signal vers le bas. Requise par le protocole du DHT22 : sans elle, la ligne reste flottante et les lectures sont aléatoires. Valeur standard : 10 kΩ.
+Résistance placée entre la broche de données d'un capteur et l'alimentation (VCC). Elle force le signal à l'état haut (1) quand aucun appareil ne tire le signal vers le bas. Requise par le protocole du DHT11 : sans elle, la ligne reste flottante et les lectures sont invalides (NaN). Valeur standard : 10 kΩ (le module DHT11 3 broches l'intègre ; le capteur nu 4 broches exige une résistance externe).
 
 **Prisma Studio**
 Interface web fournie par Prisma pour visualiser et modifier les données de la base de données. Utile en développement et en démo.
@@ -319,3 +319,21 @@ Protocole standard d'envoi d'emails. Port 1025 pour Mailhog (sans TLS), 587 pour
 
 **Quoted-printable**
 Encodage du corps des emails où les caractères spéciaux deviennent `=XX` (ex. `=` → `=3D`). À décoder avant d'extraire un contenu (ex. le token d'un lien) d'un email brut.
+
+**Bande WiFi 2,4 / 5 GHz**
+Deux fréquences radio du WiFi. L'ESP8266 ne fonctionne qu'en **2,4 GHz** : il est aveugle à tout réseau émis en 5 GHz. Un hotspot doit donc être forcé en 2,4 GHz (iPhone : « Maximiser la compatibilité »).
+
+**Mobile Hotspot (partage de connexion Windows)**
+Fonction Windows transformant le PC en point d'accès. Limite : avec **une seule carte WiFi**, le hotspot est hébergé sur la **même bande que la connexion montante** — si le PC est sur du 5 GHz, le hotspot est en 5 GHz malgré le réglage « 2,4 GHz », donc invisible pour l'ESP8266.
+
+**AP isolation (isolation client)**
+Fonction d'un point d'accès qui empêche les appareils connectés de communiquer entre eux. Fréquente sur les WiFi d'école/entreprise → un capteur connecté ne pourrait pas joindre le broker sur un PC du même réseau.
+
+**WPA2-Enterprise**
+Mode WiFi avec authentification individuelle (identifiant + mot de passe, 802.1X), typique des réseaux d'école. L'ESP8266 avec `WiFi.begin(ssid, password)` ne gère que le WPA2-Personal (mot de passe unique) → ne peut pas s'y connecter.
+
+**rc (return code PubSubClient)**
+Code retour de la connexion MQTT côté ESP (bibliothèque PubSubClient). `rc=-2` = `MQTT_CONNECT_FAILED` : la connexion **TCP** au broker a échoué (mauvaise IP, broker injoignable, **pare-feu fermé**), avant même toute négociation MQTT.
+
+**Règle pare-feu (New-NetFirewallRule)**
+Cmdlet PowerShell (admin) créant une règle Windows Firewall. Ici, autoriser l'entrant TCP sur le port **1883** pour qu'un capteur externe atteigne le broker Mosquitto (publié par Docker sur `0.0.0.0:1883`).
